@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grommet, Card, Box, Button, Text, Footer, Anchor } from 'grommet';
+import { Grommet, Card, Box, Button, Text } from 'grommet';
 import { hpe } from 'grommet-theme-hpe';
 import * as Icons from 'grommet-icons';
 import Config from './Config';
@@ -8,7 +8,6 @@ function App() {
   const [mode, setMode] = React.useState(null)
   const [error, setError] = React.useState([])
   const [output, setOutput] = React.useState([])
-  const [status, setStatus] = React.useState(null)
 
   const { ipcRenderer } = window.require("electron");
   const os = require("os");
@@ -62,9 +61,6 @@ function App() {
         { mode && <Config mode={mode} /> }
         { output && <pre>{ output }</pre> }
         { error && <Text color="status-critical">{ error }</Text> }
-        <Footer background="brand" pad="xsmall">
-          <Text>{ status && status }</Text>
-        </Footer>
       </Box>
     </Grommet>
   );
