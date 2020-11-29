@@ -6,10 +6,10 @@ import Config from './Config';
 
 function App() {
   const [mode, setMode] = React.useState(null)
-  const [error, setError] = React.useState([])
   const [output, setOutput] = React.useState([])
+  const [error, setError] = React.useState([])
+  const [status, setStatus] = React.useState([])
 
-  const { ipcRenderer } = window.require("electron");
   const os = require("os");
   const shell_cmds = {
     win32: "C:\\Windows\\System32\\cmd.exe",
@@ -20,15 +20,16 @@ function App() {
     android: "/bin/bash",
     aix: "/bin/bash"
   }
-  // update error when recieved stderr returns from ipcMain
+  // update output & error sections when message received
+  const { ipcRenderer } = window.require("electron");
+  ipcRenderer.on('mainprocess-output', (event, message) => { setOutput([ ...output, message ]) })
   ipcRenderer.on('mainprocess-error', (event, message) => { setError([ ...error, message ]) })
-  ipcRenderer.on('mainprocess-output', (event, message) => { setOutput([ ...error, message ]) })
+  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus([ ...status, message ]) })
 
-  setStatus(ipcRenderer.invoke('run-command', shell_cmds[os.platform()], "hostname"))
-
+  // setStatus(ipcRenderer.invoke('run-command', shell_cmds[os.platform()], "hostname"))
   return (
     <Grommet theme={hpe}>
-      <Box>
+      <Box align="stretch" justify="between">
         <Box direction="row">
           <Card margin="medium">
             ECP on AWS
@@ -59,8 +60,9 @@ function App() {
           </Card>
         </Box>
         { mode && <Config mode={mode} /> }
-        { output && <pre>{ output }</pre> }
+        { output && <Box justify="stretch"><pre>{ output }</pre></Box> }
         { error && <Text color="status-critical">{ error }</Text> }
+        { status && <Box justify="end" margin="xsmall"><Text color="status-ok">{ status }</Text></Box> }
       </Box>
     </Grommet>
   );

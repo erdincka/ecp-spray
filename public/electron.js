@@ -2,6 +2,7 @@ const path = require("path");
 
 const { app, BrowserWindow } = require("electron");
 const isDev = require("electron-is-dev");
+const child_process = require('child_process')
 
 let win;
 
@@ -52,6 +53,7 @@ app.on("activate", () => {
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+    win.webContents.send('mainprocess-status', "ready");
   }
 });
 
@@ -59,7 +61,6 @@ app.on("activate", () => {
 // code. You can also put them in separate files and require them here.
 
 const { ipcMain, dialog } = require('electron')
-const child_process = require('child_process')
 
 ipcMain.handle('run-command', (event, ...args) => {
   const command = args.join(' ')
