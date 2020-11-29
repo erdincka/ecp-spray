@@ -1,6 +1,6 @@
 {
-  "short_name": "ECP Deploy",
-  "name": "Deploy HPE ECP on anything",
+  "short_name": "ECP Spray",
+  "name": "Deploy HPE ECP everywhere",
   "icons": [
     {
       "src": "favicon.ico",
