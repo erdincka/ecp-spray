@@ -1,31 +1,46 @@
+import { Box, Button, Form, FormField, TextInput } from 'grommet';
 import React from 'react';
-import config from './config.json';
-import KvmConfig from './KvmConfig';
 
 function Config(props) {
-  // setUrl('https://raw.githubusercontent.com/hpe-container-platform-community/hcp-demo-env-aws-terraform/master/bluedata_infra_main.tf') 
-  // setUrl('https://raw.githubusercontent.com/hpe-container-platform-community/demo-env-azure-notebook/master/bluedata_infra_main.tf') 
-  // setUrl('https://raw.githubusercontent.com/erdincka/hcp-demo-kvm-shell/main/etc/kvm_config.sh')
+  const [config, setConfig] = React.useState({})
+  const { ipcRenderer } = window.require("electron");
 
-  let component
-  switch (props.mode) {
-    case "kvm":
-      component=<KvmConfig />
-      break
-    case "azure":
-      component=<h3>Azure coming soon</h3>
-      break
-    case "aws":
-      component=<h3>AWS coming soon</h3>
-      break
-    default:
-      component=<div>Don't know what to do with this</div>      
+  React.useEffect(() => {
+    const fetchData = async () => {
+      const conf = await ipcRenderer.invoke('get-store-value', props.conf);
+      setConfig( { ...JSON.parse(conf) } );
+    };
+    fetchData();
+  }, [ipcRenderer, props.conf]);
+  
+  const saveState = async (c) => {
+    // let file = "#!/bin/bash\n"
+    // Object.keys(c).forEach(key => 
+    //   file += key + "=\"" + c[key] + "\"\n"
+    //   );
+    await ipcRenderer.invoke('set-store-value', props.conf, JSON.stringify(c))
   }
 
-  console.dir(config)
-
   return (
-    component && component
+    <Box pad="small"> 
+      <Form
+        value={config}
+        onChange={next => setConfig(next)}
+        // onReset={() => setConfig(props.conf)}
+        onSubmit={ event => saveState(event.value) }
+      >
+        { 
+          Object.keys(config).map(key =>
+          <FormField name={key} htmlfor={key} label={key} key={key}>
+            <TextInput id={key} name={key} value={config[key]} />
+          </FormField>
+        )}
+        <Box direction="row" gap="medium">
+          <Button type="submit" primary label="Submit" />
+          {/* <Button type="reset" label="Reset" /> */}
+        </Box>
+      </Form>
+    </Box>
   )
 }
 

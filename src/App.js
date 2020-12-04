@@ -1,69 +1,57 @@
 import React from 'react';
-import { Grommet, Card, Box, Button, Text } from 'grommet';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { Grommet, Layer, Box, TextArea } from 'grommet';
 import { hpe } from 'grommet-theme-hpe';
-import * as Icons from 'grommet-icons';
-import Config from './Config';
+import { Status, Error } from './Announce';
+import Navbar from './NavBar';
+import Home from './Home';
+import { Kvm } from './Kvm';
+import { Aws } from './Aws';
+import { Azure } from './Azure';
 
 function App() {
-  const [mode, setMode] = React.useState(null)
   const [output, setOutput] = React.useState([])
-  const [error, setError] = React.useState([])
-  const [status, setStatus] = React.useState([])
+  const [error, setError] = React.useState(undefined)
+  const [status, setStatus] = React.useState(undefined)
+  const [theme, setTheme] = React.useState("dark")
 
-  const os = require("os");
-  const shell_cmds = {
-    win32: "C:\\Windows\\System32\\cmd.exe",
-    darwin: "/bin/bash",
-    linux: "/bin/bash",
-    sunos: "/bin/bash",
-    openbsd: "/bin/bash",
-    android: "/bin/bash",
-    aix: "/bin/bash"
-  }
   // update output & error sections when message received
   const { ipcRenderer } = window.require("electron");
-  ipcRenderer.on('mainprocess-output', (event, message) => { setOutput([ ...output, message ]) })
-  ipcRenderer.on('mainprocess-error', (event, message) => { setError([ ...error, message ]) })
-  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus([ ...status, message ]) })
+  ipcRenderer.on('mainprocess-output', (event, message) => { setOutput([...output, message ]) })
+  ipcRenderer.on('mainprocess-error', (event, message) => { setError(message) })
+  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus(message) })
 
-  // setStatus(ipcRenderer.invoke('run-command', shell_cmds[os.platform()], "hostname"))
   return (
-    <Grommet theme={hpe}>
-      <Box align="stretch" justify="between">
-        <Box direction="row">
-          <Card margin="medium">
-            ECP on AWS
-            <Button
-              icon={<Icons.Ubuntu />}
-              hoverIndicator
-              tip="https://github.com/hpe-container-platform-community/hcp-demo-env-aws-terraform"
-              onClick={ () => setMode('aws') }
-            />
-          </Card>
-          <Card margin="medium">
-            ECP on Azure
-            <Button
-              icon={<Icons.Windows />}
-              hoverIndicator
-              tip="https://github.com/hpe-container-platform-community/demo-env-azure-notebook"
-              onClick={ () => setMode('azure') }
-            />
-          </Card>
-          <Card margin="medium">
-            ECP on KVM
-            <Button
-              icon={<Icons.Redhat />}
-              hoverIndicator
-              tip="https://github.com/erdincka/hcp-demo-kvm-shell/"
-              onClick={ () => setMode('kvm') }
-            />
-          </Card>
-        </Box>
-        { mode && <Config mode={mode} /> }
-        { output && <Box justify="stretch"><pre>{ output }</pre></Box> }
-        { error && <Text color="status-critical">{ error }</Text> }
-        { status && <Box justify="end" margin="xsmall"><Text color="status-ok">{ status }</Text></Box> }
-      </Box>
+    <Grommet full theme={hpe} themeMode={theme}>
+      <Router>
+        <Navbar theme={ theme } setTheme={setTheme} />
+
+        <Switch>
+            <Route exact path="/" component={ Home } />
+            <Route exact path="/kvm" component={ Kvm } />
+            <Route exact path="/aws" component={ Aws } />
+            <Route exact path="/azure" component={ Azure } />
+        </Switch>
+
+        { (output.length > 0) && 
+          <Box>
+            <TextArea disabled fill value={ output.join('\n') }>
+            </TextArea>
+          </Box> 
+        }
+      </Router>
+      <Layer
+        modal={ false }
+        position="bottom"
+      >
+        <Error message={ error } />
+      </Layer>
+      <Layer
+        modal={ false }
+        position="bottom"
+      >
+        <Status message={ status } />
+      </Layer>
     </Grommet>
   );
 }
