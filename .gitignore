@@ -24,3 +24,5 @@ yarn-error.log*
 .eslintcache
 yarn.lock
 
+yarn.lock
+public/hcp-demo-kvm-shell

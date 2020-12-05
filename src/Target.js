@@ -4,23 +4,23 @@ import { PasswordInput } from 'grommet-controls';
 import { StatusGood, StatusCritical } from 'grommet-icons';
 
 function Target() {
-  const { ipcRenderer } = window.require('electron');
-  const platform = ipcRenderer.invoke('get-system', 'platform');
-  const targets = platform === 'linux' ? ['localhost', 'ssh'] : ['ssh']
   const defaultHost= {hostname: '', username: '', password: ''}
-  const [target, setTarget] = React.useState(targets[0])
+  const [target, setTarget] = React.useState()
   const [host, setHost] = React.useState(defaultHost);
   const [ready, setReady] = React.useState(false);
-  const [useHostKey, setUseHostKey] = React.useState(false);
-  const [useSshProxy, setUseSshProxy] = React.useState(false);
-  const [useProxyKey, setUseProxyKey] = React.useState(false);
+  const { remote, ipcRenderer } = window.require('electron');
 
   React.useEffect(() => {
     const fetchData = async () => {
       // get target configuration
-      const payload = JSON.parse(await ipcRenderer.invoke('get-store-value', 'target'))
-      if (payload['target']) setTarget(payload['target'])
-      if (payload['host']) setHost(payload['host'])
+      const payload = JSON.parse(await ipcRenderer.invoke('get-store-value', 'target'));
+      if (payload['target']) setTarget(payload['target']);
+      if (payload['host']) setHost(payload['host']);
+      // set targets
+      // const platform = ipcRenderer.invoke('get-system', 'platform');
+      const platform = remote.process.platform && console.dir('running on: ' + platform);
+      const targets = platform === 'linux' ? ['localhost', 'ssh'] : ['ssh']
+      setTarget(targets[0]);
     };
     fetchData();
   }, [ipcRenderer]);
@@ -28,14 +28,29 @@ function Target() {
   const saveHost = (h) => {
     ipcRenderer.invoke('set-store-value', 'target', JSON.stringify({ protocol: target, host }))
       .then(() => { 
-        ipcRenderer.invoke('app-message', 'status', target + ' target saved.');
+        ipcRenderer.invoke('app-message', 'status', host.hostname + ' target saved.');
         if ( target === 'ssh' ) {
           // check if ssh command is available
-          if (ipcRenderer.invoke('get-system', 'canRunSsh')) {
-            
-            setReady(true);
-          }
-
+          // ipcRenderer.invoke('get-system', 'canRunSsh')
+          remote.commandExists.sync('ssh')
+          .then(res => {
+            // ipcRenderer.invoke('get-system', 'testSshConnect', host)
+            remote.testSshConnect(host)
+              .then(res => {
+                if (res && res.stderr === '') {
+                  setReady(true);
+                }
+                else {
+                  setReady(false);
+                }
+              })
+              .catch(error => ipcRenderer.invoke('app-message', 'error', 
+                error.message.replace('Error invoking remote method \'get-system\':', ''))
+              );
+          })
+          .catch(error => {
+            console.dir(error);
+          })
         }
       })
       .catch(error => console.error(error))
@@ -64,15 +79,16 @@ function Target() {
                 <TextInput id='host-id' name='hostname' placeholder='hostname / ip address' />
               </FormField>
               <CheckBox 
-                name='isHostKey'
-                label="Use Key?"
+                name='useKeyFile'
+                label="Private Key?"
                 toggle
-                checked={useHostKey}
-                onChange={() => setUseHostKey(!useHostKey) } 
+                checked={host.useKeyFile}
+                onChange={() => setHost({ ...host, useKeyFile: !host.useKeyFile }) } 
               />
-              { useHostKey ? 
-                <FormField name='hostkey' htmlfor='hostkey-id' label='SSH Public ID' required>
-                  <TextInput id='hostkey-id' name='hostkey' placeholder='<ssh-rsa ...>' />
+              { (host.useProxy && !host.useKeyFile) && setHost({ ...host, useKeyFile: !host.useKeyFile }) }
+              { host.useKeyFile ? 
+                <FormField name='keyfile' htmlfor='keyfile-id' label='Private SSH Key File' required>
+                  <TextInput id='keyfile-id' name='keyfile' placeholder='path to private key file' />
                 </FormField>
                 :
                 <Box direction='row' pad='none'>
@@ -85,37 +101,37 @@ function Target() {
                 </Box>
               }
               <CheckBox 
-                name='viaSshProxy'
+                name='useProxy'
                 label="SSH proxy?"
                 toggle
-                checked={useSshProxy}
-                onChange={() => setUseSshProxy(!useSshProxy) } 
+                checked={host.useProxy}
+                onChange={() => setHost({ ...host, useProxy: !host.useProxy }) } 
               />
             </Box>
-            { useSshProxy &&
+            { host.useProxy &&
                 <Box direction='row' pad='small'>
-                  <FormField name='proxy-hostname' htmlfor='proxy-host-id' label='Proxy Hostname' required>
-                    <TextInput id='proxy-host-id' name='proxy-hostname' placeholder='hostname / ip address' />
+                  <FormField name='proxyhostname' htmlfor='proxyhost-id' label='Proxy Hostname' required>
+                    <TextInput id='proxyhost-id' name='proxyhostname' placeholder='hostname / ip address' />
                   </FormField>
                   <CheckBox 
-                    name='useProxyKey'
-                    label="Use Key?"
+                    name='useProxyKeyFile'
+                    label="Private Key?"
                     toggle
-                    checked={useProxyKey}
-                    onChange={() => setUseProxyKey(!useProxyKey) } 
+                    checked={host.useProxyKeyFile}
+                    onChange={() => ({ ...host, useProxyKeyFile: !host.useProxyKeyFile }) } 
                   />
                 {
-                useProxyKey ? 
-                  <FormField name='proxy-hostkey' htmlfor='proxy-hostkey-id' label='SSH Public ID' required>
-                    <TextInput id='proxy-hostkey-id' name='proxy-hostkey' placeholder='<ssh-rsa ...>' />
+                host.useProxyKeyFile ? 
+                  <FormField name='proxykeyfile' htmlfor='proxykeyfile-id' label='Private SSH Key File' required>
+                    <TextInput id='proxykeyfile-id' name='proxykeyfile' placeholder='path to private key file' />
                   </FormField>
                 :
                   <Box direction='row' pad='none'>
-                    <FormField name='proxy-username' htmlfor='proxy-name-id' label='Username' required>
-                      <TextInput id='proxy-name-id' name='proxy-username' placeholder='username' />
+                    <FormField name='proxyusername' htmlfor='proxyname-id' label='Username' required>
+                      <TextInput id='proxyname-id' name='proxyusername' placeholder='username' />
                     </FormField>
-                    <FormField name='proxy-password' htmlfor='proxy-pass-id' label='Password' required>
-                      <PasswordInput id='proxy-pass-id' name='proxy-password' placeholder='password' />
+                    <FormField name='proxypassword' htmlfor='proxypass-id' label='Password' required>
+                      <PasswordInput id='proxypass-id' name='proxypassword' placeholder='password' />
                     </FormField>
                   </Box>
                 }

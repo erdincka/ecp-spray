@@ -8,7 +8,10 @@ const Store = require('electron-store');
 const store = new Store();
 const updateStoreStatus = (newValue, oldValue) => {
   // win.webContents.send('mainprocess-output', JSON.stringify(newValue));
-  console.dir(newValue)
+  // console.dir(newValue)
+  // https://stackoverflow.com/a/57899958/7033031
+  const c = Object.entries(newValue).reduce((c, [k, v]) => Object.assign(c, oldValue[k] ? {} : { [k]: v }), {});
+  console.dir(c);
 }
 const unsubscribe = store.onDidAnyChange(updateStoreStatus);
 
@@ -22,6 +25,7 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
+      // contextIsolation: true,
       enableRemoteModule: true
     }
   });
@@ -108,33 +112,83 @@ ipcMain.handle('set-store-value', (event, key, value) => {
 	store.set(key, JSON.parse(value));
 });
 
-const testSshConnect = async (target) => {
+const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', user, opt, host].join(' ');
+
+const testSshConnect = (target) => {
   const ssh = new NodeSSH();
-  const result = await ssh.connect({
-    host: target.hostname,
-    username: target.username,
-    password: target.password,
-    privateKey: target.hostkey
-  })
-  .then( () => {
-    ssh.execCommand('hh_client --json', { cwd:'/var/www' }).then((out) => {
-      console.log('STDOUT: ' + out.stdout)
-      console.log('STDERR: ' + out.stderr)
-      return out;
-    })
-  })
+  let execCmd;
+  if (target.useProxy) { // using proxy
+    execCmd = sshcmd(target.username, target.hostname, '-i ' + target.keyfile) + ' true';
+    if (target.useProxyKeyFile) { // with proxy priv key file
+      console.log('with key file via proxy')
+      console.dir(target.proxyhostname)
+      console.dir(target.proxyusername)
+      console.dir(target.proxykeyfile)
+      console.dir(execCmd)
+      return ssh.connect({
+        host: target.proxyhostname,
+        username: target.proxyusername,
+        privateKey: target.proxykeyfile
+      })
+      .then( () => ssh.execCommand(execCmd) )
+    }
+    else { // with password
+      console.log('with password via proxy')
+      console.dir(target.proxyhostname)
+      console.dir(target.proxyusername)
+      console.dir(target.proxypassword)
+      console.dir(execCmd)
+      return ssh.connect({
+        host: target.proxyhostname,
+        username: target.proxyusername,
+        password: target.proxypassword,
+      })
+      .then( () => ssh.execCommand(execCmd) )
+    }
+  }
+  else { // no proxy host
+    execCmd = 'true';
+    if (target.useKeyFile) {
+      console.log('with keyfile no proxy')
+      console.dir(target.hostname)
+      console.dir(target.username)
+      console.dir(target.keyfile)
+      console.dir(execCmd)
+
+      return ssh.connect({
+        host: target.hostname,
+        username: target.username,
+        privateKey: target.keyfile
+      })
+      .then( () => ssh.execCommand(execCmd) )
+    }
+    else { // with password
+      console.log('with password no proxy')
+      console.dir(target.hostname)
+      console.dir(target.username)
+      console.dir(target.password)
+      console.dir(execCmd)
+
+      return ssh.connect({
+        host: target.hostname,
+        username: target.username,
+        password: target.password,
+      })
+      .then( () => ssh.execCommand(execCmd) )
+    }
+  }
 }
 // Various system command processing
-ipcMain.handle('get-system', (event, args) => {
+ipcMain.handle('get-system', (event, ...args) => {
   // args[0] allowed requests
   // args[1-] extra arguments if any
   switch(args[0]){
-    case 'platform':
-      return process.platform;
-      break;
-    case 'canRunSsh':
-      return command-exists('ssh');
-      break;
+    // case 'platform':
+    //   return process.platform;
+    //   break;
+    // case 'canRunSsh':
+    //   return commandExists.sync('ssh');
+    //   break;
     case 'testSshConnect':
       return testSshConnect(args[1]);
       break;
