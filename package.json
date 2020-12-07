@@ -20,14 +20,16 @@
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.1",
     "styled-components": "^5.2.1",
-    "web-vitals": "^0.2.4"
+    "web-vitals": "^0.2.4",
+    "yarn": "^1.22.10"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "concurrently -k \"set BROWSER=none && yarn start\" \"yarn:electron\"",
+    "windev": "concurrently -k \"set BROWSER=none && yarn start\" \"yarn:electron\"",
+    "lindev": "concurrently -k \"BROWSER=none yarn start\" \"yarn:electron\"",
     "electron": "wait-on tcp:3000 && electron ."
   },
   "eslintConfig": {

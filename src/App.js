@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
-import { Grommet, Layer, Box, TextArea } from 'grommet';
+import { Grommet, Box, TextArea } from 'grommet';
 import { hpe } from 'grommet-theme-hpe';
-import { Status, Error } from './Announce';
+import { Status, Error } from './Notify';
 import Navbar from './NavBar';
 import Home from './Home';
 import { Kvm } from './Kvm';
@@ -40,18 +40,11 @@ function App() {
           </Box> 
         }
       </Router>
-      <Layer
-        modal={ false }
-        position="bottom"
-      >
-        <Error message={ error } />
-      </Layer>
-      <Layer
-        modal={ false }
-        position="bottom"
-      >
-        <Status message={ status } />
-      </Layer>
+
+      { error && <Error message={ error } closer={ () => setError(undefined) } /> }
+
+      { status && <Status message={ status } closer={ () => setStatus(undefined) } /> }
+
     </Grommet>
   );
 }

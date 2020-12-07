@@ -4,28 +4,13 @@ const { app, BrowserWindow } = require("electron");
 const isDev = require("electron-is-dev");
 
 let win;
-const Store = require('electron-store');
-const store = new Store();
-const updateStoreStatus = (newValue, oldValue) => {
-  // win.webContents.send('mainprocess-output', JSON.stringify(newValue));
-  // console.dir(newValue)
-  // https://stackoverflow.com/a/57899958/7033031
-  const c = Object.entries(newValue).reduce((c, [k, v]) => Object.assign(c, oldValue[k] ? {} : { [k]: v }), {});
-  console.dir(c);
-}
-const unsubscribe = store.onDidAnyChange(updateStoreStatus);
-
-var commandExists = require('command-exists');
-const {NodeSSH} = require('node-ssh');
-
 function createWindow() {
   win = new BrowserWindow({
-    width: 1200,
-    height: 600+300,
+    width: 1000,
+    height: 400+300,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      // contextIsolation: true,
       enableRemoteModule: true
     }
   });
@@ -74,6 +59,22 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
+const Store = require('electron-store');
+const store = new Store();
+
+const updateStoreStatus = (newValue, oldValue) => {
+  // win.webContents.send('mainprocess-output', JSON.stringify(newValue));
+  // console.dir(newValue)
+  // https://stackoverflow.com/a/57899958/7033031
+  const c = Object.entries(newValue).reduce((c, [k, v]) => Object.assign(c, oldValue[k] ? {} : { [k]: v }), {});
+  console.dir(c);
+}
+
+const unsubscribe = store.onDidAnyChange(updateStoreStatus);
+
+var commandExists = require('command-exists');
+const { NodeSSH } = require('node-ssh');
+
 const { ipcMain } = require('electron')
 
 // update interface with messages
@@ -105,7 +106,7 @@ else {
   })
 }
 ipcMain.handle('get-store-value', (event, key) => {
-  return store.has(key) ? JSON.stringify(store.get(key)) : ''
+  return store.has(key) ? JSON.stringify(store.get(key)) : '{}'
 });
 
 ipcMain.handle('set-store-value', (event, key, value) => {
@@ -114,84 +115,65 @@ ipcMain.handle('set-store-value', (event, key, value) => {
 
 const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', user, opt, host].join(' ');
 
-const testSshConnect = (target) => {
+// operate on store.key('host')
+const getTarget = () => {
+  target = store.get('host');
+  console.dir(target);
+  if (target.useProxy) {
+    connectTo = { host: target.proxyhostname, username: target.proxyusername };
+    connectTo['execCmd'] = 'timeout 30s ' + sshcmd(target.username, target.hostname, '-i ' + target.keyfile)
+    if (target.useProxyKeyFile) 
+      connectTo[privateKey] = target.proxykeyfile;
+    else 
+      connectTo[password] = target.proxypassword;
+  }
+  else {
+    connectTo = { host: target.hostname, username: target.username }
+    connectTo['execCmd'] = '';
+    if (host.useKeyFile)
+      connectTo[privateKey] = target.keyfile;
+    else
+      connectTo[password] = target.password;
+  }
+  connectTo[readyTimeout] = 30000; // miliseconds to timeout
+  return connectTo;
+}
+
+const testSshConnect = () => {
   const ssh = new NodeSSH();
-  let execCmd;
-  if (target.useProxy) { // using proxy
-    execCmd = sshcmd(target.username, target.hostname, '-i ' + target.keyfile) + ' true';
-    if (target.useProxyKeyFile) { // with proxy priv key file
-      console.log('with key file via proxy')
-      console.dir(target.proxyhostname)
-      console.dir(target.proxyusername)
-      console.dir(target.proxykeyfile)
-      console.dir(execCmd)
-      return ssh.connect({
-        host: target.proxyhostname,
-        username: target.proxyusername,
-        privateKey: target.proxykeyfile
-      })
-      .then( () => ssh.execCommand(execCmd) )
-    }
-    else { // with password
-      console.log('with password via proxy')
-      console.dir(target.proxyhostname)
-      console.dir(target.proxyusername)
-      console.dir(target.proxypassword)
-      console.dir(execCmd)
-      return ssh.connect({
-        host: target.proxyhostname,
-        username: target.proxyusername,
-        password: target.proxypassword,
-      })
-      .then( () => ssh.execCommand(execCmd) )
-    }
-  }
-  else { // no proxy host
-    execCmd = 'true';
-    if (target.useKeyFile) {
-      console.log('with keyfile no proxy')
-      console.dir(target.hostname)
-      console.dir(target.username)
-      console.dir(target.keyfile)
-      console.dir(execCmd)
+  const host = getTarget();
+  const execCmd = host.execCmd + ' false';
+  host['execCmd'] = undefined;
 
-      return ssh.connect({
-        host: target.hostname,
-        username: target.username,
-        privateKey: target.keyfile
-      })
-      .then( () => ssh.execCommand(execCmd) )
-    }
-    else { // with password
-      console.log('with password no proxy')
-      console.dir(target.hostname)
-      console.dir(target.username)
-      console.dir(target.password)
-      console.dir(execCmd)
+  return ssh.connect(host).then( () => ssh.execCommand(execCmd) );
+}
 
-      return ssh.connect({
-        host: target.hostname,
-        username: target.username,
-        password: target.password,
-      })
-      .then( () => ssh.execCommand(execCmd) )
-    }
+// operate on store.key('host') or localhost (based on store.key('protocol'))
+const checkRequirements = () => {
+  if (store.get('protocol') === 'localhost'){
+    host = 'localhost'
   }
+  else { // via ssh
+    const host = getTarget();
+    console.dir(host);    
+}
+
 }
 // Various system command processing
 ipcMain.handle('get-system', (event, ...args) => {
   // args[0] allowed requests
   // args[1-] extra arguments if any
   switch(args[0]){
-    // case 'platform':
-    //   return process.platform;
-    //   break;
-    // case 'canRunSsh':
-    //   return commandExists.sync('ssh');
-    //   break;
+    case 'platform':
+      return process.platform;
+      // no need for break here
+    case 'canRunSsh':
+      return commandExists.sync('ssh');
+      // no need for break here
     case 'testSshConnect':
       return testSshConnect(args[1]);
-      break;
+    case 'requirements-ready':
+      return checkRequirements();
     default:
       return undefined;
   }
