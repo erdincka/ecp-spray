@@ -23,8 +23,8 @@ function createWindow() {
       : `file://${path.join(__dirname, "../build/index.html")}`
       );
       
-      // Open the DevTools.
       if (isDev) {
+        // Open the DevTools.
         const devTools = require("electron-devtools-installer");
         installExtension = devTools.default;
         win.webContents.openDevTools({ mode: "bottom" });
@@ -59,6 +59,10 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
+const debugMsg = (message) => {
+  return isDev ? console.dir('DEBUG: ' + message) : null;
+}
+
 const Store = require('electron-store');
 const store = new Store();
 
@@ -67,20 +71,20 @@ const updateStoreStatus = (newValue, oldValue) => {
   // console.dir(newValue)
   // https://stackoverflow.com/a/57899958/7033031
   const c = Object.entries(newValue).reduce((c, [k, v]) => Object.assign(c, oldValue[k] ? {} : { [k]: v }), {});
-  console.dir(c);
+  debugMsg('Changed store val: ' + JSON.stringify(c));
 }
-
 const unsubscribe = store.onDidAnyChange(updateStoreStatus);
 
-var commandExists = require('command-exists');
 const { NodeSSH } = require('node-ssh');
-
-const { ipcMain } = require('electron')
+const { ipcMain } = require('electron');
+const shell = require('shelljs');
+const ssh = new NodeSSH();
 
 // update interface with messages
 // args[0] => status code (status, error, output)
 // args[1] => message itself
 ipcMain.handle('app-message', (event, ...args) => {
+  debugMsg( 'APPMESSAGE: ' + args[1] + ' as (' + args[0] + ')' );
   switch(args[0]){
     case "status":
       win.webContents.send('mainprocess-status', args[1]);
@@ -105,11 +109,13 @@ else {
     else store.store = JSON.parse(data);
   })
 }
+
 ipcMain.handle('get-store-value', (event, key) => {
-  return store.has(key) ? JSON.stringify(store.get(key)) : '{}'
+  return JSON.stringify( store.get( key, {} ) );
 });
 
 ipcMain.handle('set-store-value', (event, key, value) => {
+  debugMsg('store setting ' + key + ' to ' + value);
 	store.set(key, JSON.parse(value));
 });
 
@@ -117,63 +123,93 @@ const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', us
 
 // operate on store.key('host')
 const getTarget = () => {
-  target = store.get('host');
-  console.dir(target);
-  if (target.useProxy) {
-    connectTo = { host: target.proxyhostname, username: target.proxyusername };
-    connectTo['execCmd'] = 'timeout 30s ' + sshcmd(target.username, target.hostname, '-i ' + target.keyfile)
-    if (target.useProxyKeyFile) 
-      connectTo[privateKey] = target.proxykeyfile;
-    else 
-      connectTo[password] = target.proxypassword;
+  let connectTo = {};
+  host = store.get('host');
+  debugMsg('getTarget working on: ' + JSON.stringify(host));
+  if (host.isremote) {
+    connectTo['readyTimeout'] = 30000; // miliseconds to timeout
+    connectTo['exec'] = '';
+    if (host.useproxy) {
+      connectTo['host'] = host.proxyhostname;
+      connectTo['username'] = host.proxyusername;
+      if (host.useproxykeyfile) {
+        connectTo['exec'] = 'timeout 30s ' + sshcmd(host.username, host.hostname, '-i ' + host.keyfile) + ' ';
+        connectTo['privateKey'] = host.proxykeyfile;
+      }
+      else {
+        connectTo['password'] = host.proxypassword;
+        connectTo['tryKeyboard'] = true;
+        connectTo['exec'] = 'timeout 30s ' + sshcmd(host.username, host.hostname) + ' ';
+      }
+    }
+    else {
+      connectTo['host'] = host.hostname;
+      connectTo['username'] = host.username;
+      if (host.usekeyfile)
+        connectTo['privateKey'] = host.keyfile;
+      else {
+        connectTo['tryKeyboard'] = true;
+        connectTo['password'] = host.password;
+      }
+    }
   }
   else {
-    connectTo = { host: target.hostname, username: target.username }
-    connectTo['execCmd'] = '';
-    if (host.useKeyFile)
-      connectTo[privateKey] = target.keyfile;
-    else
-      connectTo[password] = target.password;
+    connectTo = { host: 'localhost' };
   }
-  connectTo[readyTimeout] = 30000; // miliseconds to timeout
+  debugMsg('returned target: ' + JSON.stringify(connectTo));
   return connectTo;
 }
 
-const testSshConnect = () => {
-  const ssh = new NodeSSH();
+const runAtRemote = async (cmd) => {
   const host = getTarget();
-  const execCmd = host.execCmd + ' false';
-  host['execCmd'] = undefined;
+  const exec = host['exec'] + cmd;
+  debugMsg('ssh target: ' + JSON.stringify(host));
+  debugMsg('ssh to execute command ' + exec);
+  // open a connection if not exist
+  if (!ssh.isConnected()) {
+    debugMsg('Need to open a new connection');
+    await ssh.connect(host);
+  }
 
-  return ssh.connect(host).then( () => ssh.execCommand(execCmd) );
+  return ssh.execCommand(exec);
 }
 
 // operate on store.key('host') or localhost (based on store.key('protocol'))
 const checkRequirements = () => {
-  if (store.get('protocol') === 'localhost'){
-    host = 'localhost'
-  }
-  else { // via ssh
-    const host = getTarget();
-    console.dir(host);    
+  return store.get('host');
 }
 
-}
 // Various system command processing
 ipcMain.handle('get-system', (event, ...args) => {
   // args[0] allowed requests
   // args[1-] extra arguments if any
   switch(args[0]){
     case 'platform':
+      debugMsg('running on: ' + process.platform);
       return process.platform;
-      // no need for break here
+      break;
     case 'canRunSsh':
-      return commandExists.sync('ssh');
+      debugMsg('check ssh command');
+      return shell.which('ssh');
       // no need for break here
+      break;
     case 'testSshConnect':
-      return testSshConnect(args[1]);
+      debugMsg('test ssh connection');
+      return runAtRemote('true');
+      // no need for break here
+      break;
     case 'requirements-ready':
+      debugMsg('checking requirements for: ' + JSON.stringify(store.get('host')));
       return checkRequirements();
+      break;
+    case 'check-command':
+      debugMsg('checking command: ' + JSON.stringify(args[1]));
+      return store.get(host.isremote) ? runAtRemote('which ' + args[1]) : shell.which(args[1]);
+      break;
+    case 'execute-command':
+      debugMsg('running command: ' + JSON.stringify(args[1]));
+      return store.get(host.isremote) ? runAtRemote(args[1]) : shell.exec(args[1]);
+      break;
     default:
       return undefined;
   }

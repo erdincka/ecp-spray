@@ -1,124 +1,96 @@
 import React from 'react';
-import { Box, Button, CheckBox, Form, FormField, Select, TextInput } from 'grommet';
+import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { PasswordInput } from 'grommet-controls';
-import { StatusGood, StatusCritical } from 'grommet-icons';
+import { defaultHost } from './defaultHost';
+
+// import { StatusGood, StatusCritical } from 'grommet-icons';
 
 function Target(props) {
-  const defaultHost= {hostname: '', username: '', password: ''}
   const { ipcRenderer } = window.require('electron');
-  const callback = props.targetSetter;
+  const callback = props.setter;
 
   // set states
-  const [targets, setTargets] = React.useState(['ssh']);
-  const [target, setTarget] = React.useState(targets[0]);
+  // const [isremote, setIsremote] = React.useState(false);
+  const [platform, setPlatform] = React.useState();
   const [host, setHost] = React.useState(defaultHost);
-  const [targetReady, setTargetReady] = React.useState(false);
   
   React.useEffect(() => {
     const fetchData = async () => {
-      // get target configuration
-      const payload = JSON.parse(await ipcRenderer.invoke('get-store-value', 'target'));
-      if (payload['target']) setTarget(payload['target']);
-      if (payload['host']) setHost(payload['host']);
-      // set targets
-      const platform = await ipcRenderer.invoke('get-system', 'platform');
-      if (platform === 'linux') {
-        setTargets(t => t.filter(f => f !== 'localhost').concat(['localhost']));
-        setTarget('localhost');
-      }
+      // get host from stored settings
+      const stored = JSON.parse(await ipcRenderer.invoke('get-store-value', 'host'));
+      if (stored) setHost(stored)
+      // set the platform we operate on
+      setPlatform(await ipcRenderer.invoke('get-system', 'platform'));
     };
     fetchData();
   }, [ipcRenderer]);
 
   const updateTarget = (message, code='status') => {
     ipcRenderer.invoke('app-message', code, message);
-    const result = code === 'error' ? false : true;
-    setTargetReady(result);
-    callback(result);
+    callback(code === 'error' ? false : true);
   }
 
   const saveHost = () => {
-    if ( target === 'ssh' ) {
-      // check if ssh command is available
+    host.isremote ?
       ipcRenderer.invoke('get-system', 'canRunSsh')
       .then(res => {
-        // check if connection to remote host successful
-        ipcRenderer.invoke('get-system', 'testSshConnect')
-          .then(res => {
-            if (res && res.stderr === '') {
-              // success - save values and update interface
-              ipcRenderer.invoke('set-store-value', 'target', JSON.stringify({ protocol: target, host }))
-                .then( () => updateTarget('Target set to ' + host.username + '@' + host.hostname) )
-                .catch(error => ipcRenderer.invoke('app-message', 'error', 
-                  error.message.replace('Error invoking remote method \'get-system\':', '')));
+        // save settings
+        ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
+        .then( () => {
+          // check if connection to remote host successful
+          ipcRenderer.invoke('get-system', 'testSshConnect')
+            .then( (res) => {
+              if (res && res.stderr === '') updateTarget('Target set to ' + host.username + '@' + host.hostname) 
+              else updateTarget(res.stderr, 'error');
+            })
+            // catch error with ssh connection
+            .catch(error => ipcRenderer.invoke('app-message', 'error', 
+                error.message.replace('Error invoking remote method \'get-system\':', '')));
             }
-            else updateTarget(res.stderr, 'error');
-          })
-          // catch error with ssh connection
+          )
+          // catch error with setting store key
           .catch(error => ipcRenderer.invoke('app-message', 'error', 
-            error.message.replace('Error invoking remote method \'get-system\':', ''))
+            error.message.replace('Error invoking remote method \'set-store-value\':', ''))
           );
       })
       // catch error with ssh command (if exists)
       .catch(error => ipcRenderer.invoke('app-message', 'error', 
         error.message.replace('Error invoking remote method \'get-system\':', ''))
-      );
-    }
-    else { // target is localhost
-      ipcRenderer.invoke('set-store-value', 'target', JSON.stringify({ protocol: target }))
+      )
+    : // if local deployment
+      ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
       .then( () => updateTarget('Target set to localhost') )
       .catch(error => ipcRenderer.invoke('app-message', 'error', 
         error.message.replace('Error invoking remote method \'get-system\':', '')));
-    }
   }
 
   return(
     <Box pad='small' background='light-2' flex>
-      <Select
-        options={targets}
-        value={target}
-        onChange={({ option }) => setTarget(option)}
-        icon={ targetReady ? <StatusGood color='brand' /> : <StatusCritical color='plain' /> }
-      />
       <Form direction='row'
-        value={host}
-        validate='blur'
+        value={ host }
+        validate='submit'
         onChange={ nextValue => setHost(nextValue) }
         onSubmit={ () => saveHost() }
       >
-        { (target === 'ssh') &&
+        <Box direction='row'>
+          <CheckBox 
+            disabled={ platform === 'linux' ? false : true }
+            name='isremote'
+            label={ host.isremote ? 'Remote' : 'Local' }
+            toggle
+            checked={ host.isremote }
+            // onChange={() => setIsremote(!isremote) }
+          />
+          { host.isremote && <CheckBox 
+            name='useproxy'
+            label="Via proxy?"
+            toggle
+            checked={host.useproxy}
+          />}
+        </Box>
+        { host.isremote &&
           <Box>
-            <Box direction='row' pad='small'>
-              <FormField name='hostname' htmlfor='host-id' label='Hostname' required>
-                <TextInput id='host-id' name='hostname' placeholder='hostname / ip address' />
-              </FormField>
-              <FormField name='username' htmlfor='name-id' label='Username' required>
-                <TextInput id='name-id' name='username' placeholder='username' />
-              </FormField>
-              <CheckBox 
-                name='useKeyFile'
-                label="Private Key?"
-                toggle
-                checked={host.useKeyFile}
-              />
-              { (host.useProxy && !host.useKeyFile) }
-              { host.useKeyFile ? 
-                <FormField name='keyfile' htmlfor='keyfile-id' label='Private SSH Key File' required>
-                  <TextInput id='keyfile-id' name='keyfile' placeholder='path to private key file' />
-                </FormField>
-                :
-                <FormField name='password' htmlfor='pass-id' label='Password' required>
-                  <PasswordInput id='pass-id' name='password' placeholder='password' />
-                </FormField>
-              }
-              <CheckBox 
-                name='useProxy'
-                label="SSH proxy?"
-                toggle
-                checked={host.useProxy}
-              />
-            </Box>
-            { host.useProxy &&
+            { host.useproxy &&
                 <Box direction='row' pad='small'>
                   <FormField name='proxyhostname' htmlfor='proxyhost-id' label='Proxy Hostname' required>
                     <TextInput id='proxyhost-id' name='proxyhostname' placeholder='hostname / ip address' />
@@ -127,13 +99,13 @@ function Target(props) {
                     <TextInput id='proxyname-id' name='proxyusername' placeholder='username' />
                   </FormField>
                   <CheckBox 
-                    name='useProxyKeyFile'
-                    label="Private Key?"
+                    name='useproxykeyfile'
+                    label="Use prv key?"
                     toggle
-                    checked={host.useProxyKeyFile}
+                    checked={host.useproxykeyfile}
                   />
                 {
-                host.useProxyKeyFile ? 
+                host.useproxykeyfile ? 
                   <FormField name='proxykeyfile' htmlfor='proxykeyfile-id' label='Private SSH Key File' required>
                     <TextInput id='proxykeyfile-id' name='proxykeyfile' placeholder='path to private key file' />
                   </FormField>
@@ -144,12 +116,36 @@ function Target(props) {
                 }
               </Box>
             }
+            <Box direction='row' pad='small'>
+              <FormField name='hostname' htmlfor='host-id' label='Hostname' required>
+                <TextInput id='host-id' name='hostname' placeholder='hostname / ip address' />
+              </FormField>
+              <FormField name='username' htmlfor='name-id' label='Username' required>
+                <TextInput id='name-id' name='username' placeholder='username' />
+              </FormField>
+              <CheckBox 
+                name='usekeyfile'
+                label="Use prv key?"
+                toggle
+                checked={host.usekeyfile}
+              />
+              { host.usekeyfile ? 
+                <FormField name='keyfile' htmlfor='keyfile-id' label='Private SSH Key File' required>
+                  <TextInput id='keyfile-id' name='keyfile' placeholder='path to private key file' />
+                </FormField>
+                :
+                <FormField name='password' htmlfor='pass-id' label='Password' required>
+                  <PasswordInput id='pass-id' name='password' placeholder='password' />
+                </FormField>
+              }
+            </Box>
           </Box>
         }
         <Box direction='row' gap='medium'>
           <Button type='submit' primary label='Submit' />
         </Box>
       </Form>
+      <br /> { JSON.stringify(host) }
     </Box>
   )
 }

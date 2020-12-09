@@ -10,13 +10,13 @@ export const Kvm = () => {
 
   return (
     <Box flex pad='medium'>
-      <Accordion animate >
+      <Accordion>
         <AccordionPanel label='Target'>
-          <Target targetSetter={ (t) => setTarget(t) } />
+          <Target setter={ (t) => setTarget(t) } />
         </AccordionPanel>
         { target && 
           <AccordionPanel label='Requirements'>
-            <Requirements target={ target } />
+            <Requirements setter={ (p) => setPrerequisites(p) } />
           </AccordionPanel>
         }
         { prerequisites && 
