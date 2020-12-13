@@ -1,5 +1,5 @@
 export const defaultHost = { 
-  isremote: false,
+  isremote: true,
   hostname: '',
   username: '',
   password: '',

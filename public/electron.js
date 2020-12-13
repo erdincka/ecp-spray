@@ -166,11 +166,10 @@ const runAtRemote = async (cmd) => {
   debugMsg('ssh target: ' + JSON.stringify(host));
   debugMsg('ssh to execute command ' + exec);
   // open a connection if not exist
-  if (!ssh.isConnected()) {
-    debugMsg('Need to open a new connection');
+  if (!(ssh.isConnected() && ssh.connection)) {
+    debugMsg('Need a new connection');
     await ssh.connect(host);
   }
-
   return ssh.execCommand(exec);
 }
 
@@ -204,7 +203,9 @@ ipcMain.handle('get-system', (event, ...args) => {
       break;
     case 'check-command':
       debugMsg('checking command: ' + JSON.stringify(args[1]));
-      return store.get(host.isremote) ? runAtRemote('which ' + args[1]) : shell.which(args[1]);
+      // tricky way - if sent command 'args[1]' is single word (like 'python3') we use 'which <cmd>', 
+      // if more than one word is sent, such as 'python3 -m pip show ipcalc' we use this entire command to check
+      return store.get(host.isremote) ? runAtRemote(args[1].split(' ').length > 1 ? args[1] : 'which ' + args[1]) : shell.which(args[1]);
       break;
     case 'execute-command':
       debugMsg('running command: ' + JSON.stringify(args[1]));

@@ -1,24 +1,8 @@
 {
   "ezmeral" : {
     "DOMAIN": "ecp.demo",
-    "AD_SERVER_ENABLED": "True",
-    "REGION":"ME",
-    "CREATE_EIP_CONTROLLER": "False",
-    "CREATE_EIP_GATEWAY": "False",
-    "INSTALL_WITH_SSL": "True",
-    "SELINUX_DISABLED": "True",
-    "MAPR_CLUSTER1_COUNT": "0",
-    "MAPR_CLUSTER2_COUNT": "0",
-    "RDP_SERVER_ENABLED": "False",
-    "RDP_SERVER_OPERATING_SYSTEM": "LINUX",
-    "CREATE_EIP_RDP_LINUX_SERVER": "False",
-    "CA_KEY": "ca-key.pem",
-    "CA_CERT": "ca-cert.pem",
-    "LOCAL_SSH_PUB_KEY_PATH": "controller.pub_key",
-    "LOCAL_SSH_PRV_KEY_PATH": "controller.prv_key",
     "EPIC_FILENAME": "hpe-cp-rhel-release-5.1-3011.bin",
-    "EPIC_DL_URL": "http://10.1.1.202/files/ezmeral/${EPIC_FILENAME}",
-    "EPIC_OPTIONS": "--skipeula"
+    "EPIC_DL_URL": "http://10.1.1.202/files/ezmeral/${EPIC_FILENAME}"
   },
   "kvm": {
     "KVM_NETWORK": "default",

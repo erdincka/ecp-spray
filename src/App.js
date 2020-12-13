@@ -19,26 +19,28 @@ function App() {
   const { ipcRenderer } = window.require("electron");
   ipcRenderer.on('mainprocess-output', (event, message) => { setOutput([...output, message ]) })
   ipcRenderer.on('mainprocess-error', (event, message) => { setError(message) })
-  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus(message) })
+  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus(message); setTimeout(() => {
+    setStatus(undefined);
+  }, 1000); })
 
   return (
     <Grommet full theme={hpe} themeMode={theme}>
       <Router>
         <Navbar theme={ theme } setTheme={setTheme} />
+        <Box direction='row'>
+          <Switch>
+              <Route exact path="/" component={ Home } />
+              <Route exact path="/kvm" component={ Kvm } />
+              <Route exact path="/aws" component={ Aws } />
+              <Route exact path="/azure" component={ Azure } />
+          </Switch>
 
-        <Switch>
-            <Route exact path="/" component={ Home } />
-            <Route exact path="/kvm" component={ Kvm } />
-            <Route exact path="/aws" component={ Aws } />
-            <Route exact path="/azure" component={ Azure } />
-        </Switch>
-
-        { (output.length > 0) && 
-          <Box>
-            <TextArea disabled fill value={ output.join('\n') }>
-            </TextArea>
-          </Box> 
-        }
+          { (output.length > 0) && 
+            <Box margin='small'>
+              <TextArea disabled fill value={ output.join('\n') } />
+            </Box> 
+          }
+        </Box>
       </Router>
 
       { error && <Error message={ error } closer={ () => setError(undefined) } /> }

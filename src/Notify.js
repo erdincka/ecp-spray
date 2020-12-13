@@ -5,7 +5,7 @@ import { FormClose, StatusGood, StatusCritical } from 'grommet-icons';
 export const NotificationLayer = (props) => {
   return (
     <Layer
-      position="top-right"
+      position="bottom"
       modal={ false }
       margin={{ vertical: 'medium', horizontal: 'small' }}
       responsive={ false }

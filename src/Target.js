@@ -3,14 +3,10 @@ import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { PasswordInput } from 'grommet-controls';
 import { defaultHost } from './defaultHost';
 
-// import { StatusGood, StatusCritical } from 'grommet-icons';
-
 function Target(props) {
   const { ipcRenderer } = window.require('electron');
   const callback = props.setter;
 
-  // set states
-  // const [isremote, setIsremote] = React.useState(false);
   const [platform, setPlatform] = React.useState();
   const [host, setHost] = React.useState(defaultHost);
   
@@ -66,6 +62,7 @@ function Target(props) {
 
   return(
     <Box pad='small' background='light-2' flex>
+      { JSON.stringify(host) } <br /> 
       <Form direction='row'
         value={ host }
         validate='submit'
@@ -78,8 +75,7 @@ function Target(props) {
             name='isremote'
             label={ host.isremote ? 'Remote' : 'Local' }
             toggle
-            checked={ host.isremote }
-            // onChange={() => setIsremote(!isremote) }
+            checked={ host.isremote || true }
           />
           { host.isremote && <CheckBox 
             name='useproxy'
@@ -142,10 +138,9 @@ function Target(props) {
           </Box>
         }
         <Box direction='row' gap='medium'>
-          <Button type='submit' primary label='Submit' />
+          <Button type='submit' primary fill label='Save' />
         </Box>
       </Form>
-      <br /> { JSON.stringify(host) }
     </Box>
   )
 }
