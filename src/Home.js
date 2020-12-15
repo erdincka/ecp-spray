@@ -14,13 +14,13 @@ const Home = () => {
               <CardBody pad="medium" align="center">{ p.description }</CardBody>
               <CardFooter pad="small" background="light-2">
                 <Button icon={<Github />} 
-                  label="Source" 
+                  // label="Source" 
                   hoverIndicator
                   href={p.url} target="_new">
                 </Button>
                 <Link to={ "/" + p.name } >
                   <Button icon={<Launch color="plain" />} 
-                    label="Launch"
+                    // label="Launch"
                     hoverIndicator 
                   />
                 </Link>

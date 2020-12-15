@@ -21,7 +21,7 @@ export const Kvm = () => {
 
     const replace = () => {
       Object.keys(ezmeral).forEach( val => {
-        const replaceVal = 'sed -i s/' + val + '=/' + val + '=' + ezmeral[val] + '/ ./' + repodir + '/etc/kvm_config.sh';
+        const replaceVal = 'sed -i \'s+' + val + '=+' + val + '=' + ezmeral[val] + '+\' ./' + repodir + '/etc/kvm_config.sh';
         console.dir(replaceVal);
         // ipcRenderer.invoke('get-system', 'execute-command', replaceVal);
       })

@@ -61,8 +61,8 @@ function Target(props) {
   }
 
   return(
-    <Box pad='small' background='light-2' flex>
-      { JSON.stringify(host) } <br /> 
+    <Box pad='small' flex>
+      {/* { JSON.stringify(host) } <br />  */}
       <Form direction='row'
         value={ host }
         validate='submit'
