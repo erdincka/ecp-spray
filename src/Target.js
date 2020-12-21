@@ -60,6 +60,63 @@ function Target(props) {
         error.message.replace('Error invoking remote method \'get-system\':', '')));
   }
 
+  const proxyBox = 
+  <Box>
+    <Box direction='row'>
+      <FormField name='proxyhostname' htmlfor='proxyhost-id' label='Proxy Hostname' required>
+        <TextInput id='proxyhost-id' name='proxyhostname' placeholder='hostname / ip address' />
+      </FormField>
+      <FormField name='proxyusername' htmlfor='proxyname-id' label='Username' required>
+        <TextInput id='proxyname-id' name='proxyusername' placeholder='username' />
+      </FormField>
+    </Box>
+    <CheckBox 
+      name='useproxykeyfile'
+      label="Use private key file?"
+      toggle
+      checked={host.useproxykeyfile}
+    />
+    <Box> {
+        host.useproxykeyfile ? 
+          <FormField name='proxykeyfile' htmlfor='proxykeyfile-id' label='Private SSH Key File' required>
+            <TextInput id='proxykeyfile-id' name='proxykeyfile' placeholder='path to private key file' />
+          </FormField>
+        :
+          <FormField name='proxypassword' htmlfor='proxypass-id' label='Password' required>
+            <PasswordInput id='proxypass-id' name='proxypassword' placeholder='password' />
+          </FormField>
+      } </Box>
+    </Box>;
+
+  const hostBox = 
+    <Box>
+      <Box direction='row'>
+        <FormField name='hostname' htmlfor='host-id' label='Hostname' required>
+          <TextInput id='host-id' name='hostname' placeholder='hostname / ip address' />
+        </FormField>
+        <FormField name='username' htmlfor='name-id' label='Username' required>
+          <TextInput id='name-id' name='username' placeholder='username' />
+        </FormField>
+      </Box>
+      <CheckBox 
+        name='usekeyfile'
+        label="Use private key file?"
+        toggle
+        checked={host.usekeyfile}
+      />
+      <Box>
+        { host.usekeyfile ? 
+          <FormField name='keyfile' htmlfor='keyfile-id' label='Private SSH Key File' required>
+            <TextInput id='keyfile-id' name='keyfile' placeholder='path to private key file' />
+          </FormField>
+          :
+          <FormField name='password' htmlfor='pass-id' label='Password' required>
+            <PasswordInput id='pass-id' name='password' placeholder='password' />
+          </FormField>
+        }
+      </Box>
+    </Box>;
+
   return(
     <Box pad='small' flex>
       {/* { JSON.stringify(host) } <br />  */}
@@ -86,55 +143,9 @@ function Target(props) {
         </Box>
         { host.isremote &&
           <Box>
-            { host.useproxy &&
-                <Box direction='row' pad='small'>
-                  <FormField name='proxyhostname' htmlfor='proxyhost-id' label='Proxy Hostname' required>
-                    <TextInput id='proxyhost-id' name='proxyhostname' placeholder='hostname / ip address' />
-                  </FormField>
-                  <FormField name='proxyusername' htmlfor='proxyname-id' label='Username' required>
-                    <TextInput id='proxyname-id' name='proxyusername' placeholder='username' />
-                  </FormField>
-                  <CheckBox 
-                    name='useproxykeyfile'
-                    label="Use prv key?"
-                    toggle
-                    checked={host.useproxykeyfile}
-                  />
-                {
-                host.useproxykeyfile ? 
-                  <FormField name='proxykeyfile' htmlfor='proxykeyfile-id' label='Private SSH Key File' required>
-                    <TextInput id='proxykeyfile-id' name='proxykeyfile' placeholder='path to private key file' />
-                  </FormField>
-                :
-                  <FormField name='proxypassword' htmlfor='proxypass-id' label='Password' required>
-                    <PasswordInput id='proxypass-id' name='proxypassword' placeholder='password' />
-                  </FormField>
-                }
-              </Box>
+            { host.useproxy && proxyBox
             }
-            <Box direction='row' pad='small'>
-              <FormField name='hostname' htmlfor='host-id' label='Hostname' required>
-                <TextInput id='host-id' name='hostname' placeholder='hostname / ip address' />
-              </FormField>
-              <FormField name='username' htmlfor='name-id' label='Username' required>
-                <TextInput id='name-id' name='username' placeholder='username' />
-              </FormField>
-              <CheckBox 
-                name='usekeyfile'
-                label="Use prv key?"
-                toggle
-                checked={host.usekeyfile}
-              />
-              { host.usekeyfile ? 
-                <FormField name='keyfile' htmlfor='keyfile-id' label='Private SSH Key File' required>
-                  <TextInput id='keyfile-id' name='keyfile' placeholder='path to private key file' />
-                </FormField>
-                :
-                <FormField name='password' htmlfor='pass-id' label='Password' required>
-                  <PasswordInput id='pass-id' name='password' placeholder='password' />
-                </FormField>
-              }
-            </Box>
+            { hostBox }
           </Box>
         }
         <Box direction='row' gap='medium'>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
-import { Grommet, Box, TextArea, Text } from 'grommet';
+import { Grommet, Box, TextArea, Grid } from 'grommet';
 import { hpe } from 'grommet-theme-hpe';
-import { Status, Error } from './Notify';
+import { Error } from './Notify';
 import Navbar from './NavBar';
 import Home from './Home';
 import { Kvm } from './Kvm';
@@ -23,32 +23,47 @@ function App() {
   // ipcRenderer.on('mainprocess-status', (event, message) => { setStatus(message); setTimeout(() => {
     //   setStatus(undefined);
     // }, 1000); })
-  ipcRenderer.on('mainprocess-status', (event, message) => { setStatus( [ ...status, message ] ) });
+  ipcRenderer.on('mainprocess-status', (event, message) => { console.dir(message); setStatus( [ ...status, message ] ) });
 
   return (
     <Grommet full theme={hpe} themeMode={theme}>
       <Router>
-        <Navbar theme={ theme } setTheme={setTheme} />
-        <Box direction='row'>
-            <Switch>
+        <Grid
+          rows={['xxsmall', 'flex']}
+          columns={['flex', 'flex']}
+          gap="small"
+          fill
+          areas={[
+            { name: 'header', start: [0, 0], end: [1, 0] },
+            { name: 'main', start: [0, 1], end: [0, 1] },
+            { name: 'stat', start: [1, 1], end: [1, 1] },
+          ]}
+        >
+          <Box gridArea='header'>
+            <Navbar theme={ theme } setTheme={setTheme} />
+          </Box>
+          <Box gridArea='main'>
+            <Switch gridArea='main' direction='row'>
                 <Route exact path="/" component={ Home } />
                 <Route exact path="/kvm" component={ Kvm } />
                 <Route exact path="/aws" component={ Aws } />
                 <Route exact path="/azure" component={ Azure } />
             </Switch>
-
-          { (output.length > 0) && 
-            <Box margin='small'>
-              <TextArea disabled fill value={ output.join('\n') } />
-            </Box> 
-          }
-          { status && 
-            <Box margin='small'>
+          </Box>
+        <Box gridArea='stat'>
+          { status.length > 0 && 
+            <Box margin='small' overflow='scroll'>
               {/* <Text color='status-ok' weight='bold'>Status</Text> */}
               <TextArea disabled fill icon={<StatusGood />} value={ status.join('\n') } />
             </Box> 
           }
-        </Box>
+          { (output.length > 0) && 
+            <Box margin='small' fill='vertical' overflow='scroll'>
+              <TextArea disabled fill value={ output.join('\n') } />
+            </Box> 
+          }
+          </Box>
+        </Grid>
       </Router>
 
       { error && <Error message={ error } closer={ () => setError(undefined) } /> }

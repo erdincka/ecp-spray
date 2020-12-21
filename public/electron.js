@@ -6,8 +6,8 @@ const isDev = require("electron-is-dev");
 let win;
 function createWindow() {
   win = new BrowserWindow({
-    width: 1000,
-    height: 400+300,
+    width: 960,
+    height: 640+300,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
@@ -133,13 +133,13 @@ const getTarget = () => {
       connectTo['host'] = host.proxyhostname;
       connectTo['username'] = host.proxyusername;
       if (host.useproxykeyfile) {
-        connectTo['exec'] = 'timeout 30s ' + sshcmd(host.username, host.hostname, '-i ' + host.keyfile) + ' ';
+        connectTo['exec'] = sshcmd(host.username, host.hostname, '-i ' + host.keyfile) + ' ';
         connectTo['privateKey'] = host.proxykeyfile;
       }
       else {
         connectTo['password'] = host.proxypassword;
         connectTo['tryKeyboard'] = true;
-        connectTo['exec'] = 'timeout 30s ' + sshcmd(host.username, host.hostname) + ' ';
+        connectTo['exec'] = sshcmd(host.username, host.hostname) + ' ';
       }
     }
     else {
@@ -162,7 +162,7 @@ const getTarget = () => {
 
 const runAtRemote = async (cmd) => {
   const host = getTarget();
-  const exec = host['exec'] + cmd;
+  const exec = host['exec'] + '"' + cmd + '"';
   debugMsg('ssh target: ' + JSON.stringify(host));
   debugMsg('ssh to execute command ' + exec);
   // open a connection if not exist
@@ -171,11 +171,6 @@ const runAtRemote = async (cmd) => {
     await ssh.connect(host);
   }
   return ssh.execCommand(exec);
-}
-
-// operate on store.key('host') or localhost (based on store.key('protocol'))
-const checkRequirements = () => {
-  return store.get('host');
 }
 
 // Various system command processing
@@ -191,26 +186,24 @@ ipcMain.handle('get-system', (event, ...args) => {
       debugMsg('check ssh command');
       return shell.which('ssh');
       // no need for break here
-      break;
     case 'testSshConnect':
       debugMsg('test ssh connection');
       return runAtRemote('true');
       // no need for break here
-      break;
     case 'requirements-ready':
       debugMsg('checking requirements for: ' + JSON.stringify(store.get('host')));
-      return checkRequirements();
-      break;
-    case 'check-command':
-      debugMsg('checking command: ' + JSON.stringify(args[1]));
+      return JSON.stringify(store.get('host'));
+      // no need for break here
+    // case 'check-command':
+      // debugMsg('checking command: ' + JSON.stringify(args[1]));
       // tricky way - if sent command 'args[1]' is single word (like 'python3') we use 'which <cmd>', 
       // if more than one word is sent, such as 'python3 -m pip show ipcalc' we use this entire command to check
-      return store.get(host.isremote) ? runAtRemote(args[1].split(' ').length > 1 ? args[1] : 'which ' + args[1]) : shell.which(args[1]);
-      break;
+      // return store.get(host.isremote) ? runAtRemote(args[1].split(' ').length > 1 ? args[1] : 'which ' + args[1]) : shell.which(args[1]);
+      // no need for break here
     case 'execute-command':
       debugMsg('running command: ' + JSON.stringify(args[1]));
       return store.get(host.isremote) ? runAtRemote(args[1]) : shell.exec(args[1]);
-      break;
+      // no need for break here
     default:
       return undefined;
   }

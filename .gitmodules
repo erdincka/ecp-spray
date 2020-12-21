@@ -1,3 +1,0 @@
-[submodule ".\\public\\hcp-demo-kvm-shell"]
-	path = .\\public\\hcp-demo-kvm-shell
-	url = https://github.com/erdincka/hcp-demo-kvm-shell/

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Accordion, AccordionPanel, Button, Text } from 'grommet';
 import Config from './Config';
 import Target from './Target';
-import Requirements from './Requirements';
+import Requirements from './KVM_Prereq';
 import { StatusGood, StatusWarning } from 'grommet-icons';
 
 export const Kvm = () => {
@@ -34,26 +34,13 @@ export const Kvm = () => {
         ipcRenderer.invoke('app-message', 'error', res.stderr);
       }
       else { // safe to proceed
-        ipcRenderer.invoke('get-system', 'execute-command', 'sudo virsh net-list --all | grep ' + kvm.KVM_NETWORK + ' | grep active' )
-        .then( res => {
-          console.dir(res);
-          if (res.stdout){
-            // continue
-            replace();
-          }
-          else{
-            // TODO: create and activate requested network - available in repo already
-            ipcRenderer.invoke('app-message', 'error', kvm.KVM_NETWORK + ' not found/activated. Need active virsh network');
-          }
-        })
-        .catch( error => console.dir(error));
-
+        console.dir('safe to proceed');
       }
     })
   }
 
   return (
-    <Box flex pad='medium'>
+    <Box fill pad='small' overflow='scroll'>
       <Accordion>
         <AccordionPanel header={
           <Box direction='row' justify='between' pad='small'>
@@ -63,13 +50,22 @@ export const Kvm = () => {
           <Target setter={ (t) => setTarget(t) } />
         </AccordionPanel>
         { target &&
-        <AccordionPanel header={
-          <Box direction='row' justify='between' pad='small'>
-            <Text>Pre-requisites</Text>
-            { prerequisites ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
-          </Box>}>
-          <Requirements setter={ (p) => setPrerequisites(p) } />
-        </AccordionPanel>
+          <AccordionPanel header={
+            <Box direction='row' justify='between' pad='small'>
+              <Text>KVM Settings</Text>
+              { kvmconfig ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
+            </Box>}>
+            <Config conf='kvm' setter={ (k) => setKvmconfig(k) } />
+          </AccordionPanel>
+        }
+        { kvmconfig &&
+          <AccordionPanel header={
+            <Box direction='row' justify='between' pad='small'>
+              <Text>Pre-requisites</Text>
+              { prerequisites ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
+            </Box>}>
+            <Requirements setter={ (p) => setPrerequisites(p) } />
+          </AccordionPanel>
         }
         { prerequisites &&
         <AccordionPanel header={
@@ -77,26 +73,17 @@ export const Kvm = () => {
             <Text>Ezmeral</Text>
             { ezmeral ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
           </Box>}>
-            <Config conf='ezmeral' setter={ (e) => setEzmeral(e) } />
-          </AccordionPanel>
+          <Config conf='ezmeral' setter={ (e) => setEzmeral(e) } />
+        </AccordionPanel>
         }
-        { ezmeral &&
-          <AccordionPanel header={
-            <Box direction='row' justify='between' pad='small'>
-              <Text>Ezmeral</Text>
-              { ezmeral ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
-            </Box>}>
-            <Config conf='kvm' setter={ (k) => setKvmconfig(k) } />
-          </AccordionPanel>
-        }
-      </Accordion>
       {
-        kvmconfig &&
+        ezmeral &&
         <Button 
-          onClick={ () => deploy() }
-          label='Start deployment' 
+        onClick={ () => deploy() }
+        label='Start deployment' 
         />
       }
+      </Accordion>
     </Box>
   );
 

@@ -13,7 +13,7 @@
     "GATW_PUB_HOSTNAME": "ecp",
     "TIMEZONE": "Asia/Dubai",
     "CENTOS_FILENAME": "CentOS-7-x86_64-GenericCloud-2003.qcow2",
-    "CENTOS_DL_URL": "http://10.1.1.202/files/osimages/${CENTOS_FILENAME}",
+    "CENTOS_DL_URL": "http://10.1.1.202/files/osimages/",
     "PROJECT_DIR": "/data/ecp"
   },
   "aws": {

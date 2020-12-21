@@ -6,21 +6,21 @@ import { Github, Launch } from 'grommet-icons';
 
 const Home = () => {
    return (
-    <Box margin="medium" direction="row-responsive" full>
+    <Box margin='small' full>
       { 
         Platforms.map( (p, key) => 
-            <Card margin="medium" flex key={key}>
-              <CardHeader pad="medium">{p.label} { p.icon }</CardHeader>
-              <CardBody pad="medium" align="center">{ p.description }</CardBody>
-              <CardFooter pad="small" background="light-2">
+            <Card margin='small' flex key={key}>
+              <CardHeader pad='small'>{ p.label } { p.icon }</CardHeader>
+              <CardBody pad='small' align='center'>{ p.description }</CardBody>
+              <CardFooter pad='small' background='light-2'>
                 <Button icon={<Github />} 
-                  // label="Source" 
+                  // label='Source' 
                   hoverIndicator
-                  href={p.url} target="_new">
+                  href={p.url} target='_new'>
                 </Button>
-                <Link to={ "/" + p.name } >
-                  <Button icon={<Launch color="plain" />} 
-                    // label="Launch"
+                <Link to={ '/' + p.name } >
+                  <Button icon={<Launch color='plain' />} 
+                    // label='Launch'
                     hoverIndicator 
                   />
                 </Link>

@@ -28,22 +28,24 @@ function Config(props) {
     return config[key] === 'True' || config[key] === 'False';
   }
 
+  const processConfig = next => {
+    Object.keys(next).forEach( key => { 
+      // Convert boolean to string
+      if (next[key] === true) next[key]='True';
+      if (next[key] === false) next[key]='False';
+    } ) // end of forEach
+    setConfig(next);
+  }
+
   return (
     <Box pad="small"> 
       <Form
         value={config}
-        onChange={ next => { 
-          // Convert boolean to string
-          Object.keys(next).forEach( key => { 
-            if (next[key] === true) next[key]='True';
-            if (next[key] === false) next[key]='False';
-          } )
-          setConfig(next) } 
-        }
+        onChange={ next => processConfig(next) }
         // onReset={() => setConfig(props.conf)}
         onSubmit={ event => saveState(event.value) }
       >
-        { JSON.stringify(config) }
+        {/* { JSON.stringify(config) } */}
         { 
           Object.keys(config).map(key =>
             isBool(key) ? 
