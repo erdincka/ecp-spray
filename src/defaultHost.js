@@ -8,6 +8,7 @@ export const defaultHost = {
   useproxy: false,
   proxyhostname: '',
   proxyusername: '',
+  proxypassword: '',
   useproxykeyfile: false,
   proxykeyfile: ''
 };

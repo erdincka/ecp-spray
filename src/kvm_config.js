@@ -1,10 +1,11 @@
-import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import React from 'react';
+import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
+import { Next } from 'grommet-icons';
 
 function Config(props) {
   const [config, setConfig] = React.useState({});
   const { ipcRenderer } = window.require("electron");
-  const setParent = props.setter;
+  const setParent = props.setParent;
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -15,10 +16,6 @@ function Config(props) {
   }, [ipcRenderer, props.conf]);
   
   const saveState = async (c) => {
-    // let file = "#!/bin/bash\n"
-    // Object.keys(c).forEach(key => 
-    //   file += key + "=\"" + c[key] + "\"\n"
-    //   );
     await ipcRenderer.invoke('set-store-value', props.conf, JSON.stringify(c));
     ipcRenderer.invoke('app-message', 'status', props.conf + ' saved');
     setParent(true);
@@ -47,7 +44,7 @@ function Config(props) {
       >
         {/* { JSON.stringify(config) } */}
         { 
-          Object.keys(config).map(key =>
+          Object.keys(config).map(key => 
             isBool(key) ? 
               <CheckBox 
                 name= { key }
@@ -58,13 +55,12 @@ function Config(props) {
                 toggle={true}
               /> 
               :
-              <FormField name={key} htmlfor={key} label={key} key={key}>
-                  <TextInput id={key} name={key} value={config[key]} />
+              <FormField name={key} htmlfor={key} label={key} key={key} >
+                  <TextInput id={key} name={key} value={config[key]} disabled={ ( key === 'KVM_NETWORK' ) } />
               </FormField>
         )}
-        <Box direction="row" gap="medium">
-          <Button type="submit" primary fill label="Save" />
-          {/* <Button type="reset" label="Reset" /> */}
+        <Box direction='row' gap='medium' justify='end'>
+          <Button type='submit' label='Next' icon={ <Next /> } />
         </Box>
       </Form>
     </Box>

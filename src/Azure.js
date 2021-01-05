@@ -1,8 +1,8 @@
-import Config from './Config';
+import { Fragment } from "react"
 
 export const Azure = () => {
 
   return (
-    <Config />
+    <Fragment />
   )
 }

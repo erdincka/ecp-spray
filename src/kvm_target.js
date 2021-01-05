@@ -1,11 +1,13 @@
 import React from 'react';
 import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
+import { Next } from 'grommet-icons';
 import { PasswordInput } from 'grommet-controls';
+import { sendStatus, sendError, sendOutput } from './helpers';
 import { defaultHost } from './defaultHost';
 
 function Target(props) {
   const { ipcRenderer } = window.require('electron');
-  const callback = props.setter;
+  const setParent = props.setParent;
 
   const [platform, setPlatform] = React.useState();
   const [host, setHost] = React.useState(defaultHost);
@@ -14,17 +16,13 @@ function Target(props) {
     const fetchData = async () => {
       // get host from stored settings
       const stored = JSON.parse(await ipcRenderer.invoke('get-store-value', 'host'));
-      if (stored) setHost(stored)
+      if (stored.hostname) setHost(stored);
+      // else console.dir(defaultHost);
       // set the platform we operate on
       setPlatform(await ipcRenderer.invoke('get-system', 'platform'));
     };
     fetchData();
   }, [ipcRenderer]);
-
-  const updateTarget = (message, code='status') => {
-    ipcRenderer.invoke('app-message', code, message);
-    callback(code === 'error' ? false : true);
-  }
 
   const saveHost = () => {
     host.isremote ?
@@ -34,30 +32,33 @@ function Target(props) {
         ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
         .then( () => {
           // check if connection to remote host successful
-          ipcRenderer.invoke('get-system', 'testSshConnect')
+          ipcRenderer.invoke('get-system', 'execute-command', 'uname -a')
             .then( (res) => {
-              if (res && res.stderr === '') updateTarget('Target set to ' + host.username + '@' + host.hostname) 
-              else updateTarget(res.stderr, 'error');
+              if (res && res.stderr === '') {
+                sendStatus('Connected to ' + host.username + '@' + host.hostname);
+                sendOutput(res.stdout);
+                setParent(true);
+              }
+              else sendError(res.stderr);
             })
             // catch error with ssh connection
-            .catch(error => ipcRenderer.invoke('app-message', 'error', 
-                error.message.replace('Error invoking remote method \'get-system\':', '')));
+            .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', '')));
             }
           )
           // catch error with setting store key
-          .catch(error => ipcRenderer.invoke('app-message', 'error', 
-            error.message.replace('Error invoking remote method \'set-store-value\':', ''))
+          .catch(error => sendError(error.message.replace('Error invoking remote method \'set-store-value\':', ''))
           );
       })
       // catch error with ssh command (if exists)
-      .catch(error => ipcRenderer.invoke('app-message', 'error', 
-        error.message.replace('Error invoking remote method \'get-system\':', ''))
+      .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', ''))
       )
     : // if local deployment
       ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
-      .then( () => updateTarget('Target set to localhost') )
-      .catch(error => ipcRenderer.invoke('app-message', 'error', 
-        error.message.replace('Error invoking remote method \'get-system\':', '')));
+      .then( () => {
+        sendStatus('Target set to localhost');
+        setParent(true);
+      })
+      .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', '')));
   }
 
   const proxyBox = 
@@ -119,7 +120,7 @@ function Target(props) {
 
   return(
     <Box pad='small' flex>
-      {/* { JSON.stringify(host) } <br />  */}
+      {/* { JSON.stringify(host) } <br /> */}
       <Form direction='row'
         value={ host }
         validate='submit'
@@ -127,13 +128,14 @@ function Target(props) {
         onSubmit={ () => saveHost() }
       >
         <Box direction='row'>
-          <CheckBox 
-            disabled={ platform === 'linux' ? false : true }
+          { platform === 'linux' && <CheckBox 
+            // disabled={ platform === 'linux' ? false : true }
             name='isremote'
             label={ host.isremote ? 'Remote' : 'Local' }
             toggle
             checked={ host.isremote || true }
           />
+          }
           { host.isremote && <CheckBox 
             name='useproxy'
             label="Via proxy?"
@@ -148,8 +150,10 @@ function Target(props) {
             { hostBox }
           </Box>
         }
-        <Box direction='row' gap='medium'>
-          <Button type='submit' primary fill label='Save' />
+        <Box direction='row' gap='medium' justify='end'>
+          <Button type='submit' label='Next' icon={ <Next /> }
+            disabled={ !host }
+          />
         </Box>
       </Form>
     </Box>

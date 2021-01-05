@@ -1,22 +1,31 @@
-import { Nav, Button } from 'grommet';
+import { Nav, Button, CheckBox, Box } from 'grommet';
 import React from 'react';
 import { Link } from 'react-router-dom'
-import { Home, Moon } from 'grommet-icons';
+import { Home, Moon, Sun, Console, Desktop } from 'grommet-icons';
 
-const Navbar = ({ title, theme, setTheme }) =>{
+export const Navbar = ({ title, theme, setTheme, expert, setExpert }) =>{
   return (
-    <Nav direction="row" background="brand" pad="small" justify="between">
-      <Link to="/" >
+    <Nav direction='row' pad='small' justify='between'>
+      <Link to='/' >
         <Button 
-          icon={<Home color="plain" />}
+          icon={<Home />}
           label={ title }
         />
       </Link>
-      <Button 
-        icon={<Moon color="plain" />}
-        label="Theme"
-        onClick={ () => setTheme(theme === "dark" ? "light" : "dark")}
-      />
+      <Box direction='row'>
+        <CheckBox 
+          toggle reverse
+          label={ theme === 'dark' ? <Moon /> : <Sun /> }
+          checked={ theme === 'dark' ? false : true }
+          onChange={ () => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        />
+        <CheckBox 
+          toggle reverse
+          label={ expert ? <Console /> : <Desktop /> }
+          checked={ expert ? true : false }
+          onChange={ () => setExpert(!expert)}
+        />
+      </Box>
     </Nav>
   )
 }

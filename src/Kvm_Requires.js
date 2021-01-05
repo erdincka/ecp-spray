@@ -55,6 +55,13 @@ export const required = [
         }
       },
       {
+        command: 'brctl',
+        installCommand: {
+          centos: 'sudo yum install -y bridge-utils',
+          ubuntu: 'sudo apt install -y bridge-utils'
+        }
+      },
+      {
         command: 'curl',
         installCommand: {
           centos: 'sudo dnf install -y curl',

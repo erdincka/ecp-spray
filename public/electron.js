@@ -8,10 +8,13 @@ function createWindow() {
   win = new BrowserWindow({
     width: 960,
     height: 640+300,
+    x: 20,
+    y: 20,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
+      contextIsolation: false
     }
   });
   
@@ -186,10 +189,10 @@ ipcMain.handle('get-system', (event, ...args) => {
       debugMsg('check ssh command');
       return shell.which('ssh');
       // no need for break here
-    case 'testSshConnect':
-      debugMsg('test ssh connection');
-      return runAtRemote('true');
-      // no need for break here
+    // case 'testSshConnect':
+    //   debugMsg('test ssh connection');
+    //   return runAtRemote('true');
+    //   // no need for break here
     case 'requirements-ready':
       debugMsg('checking requirements for: ' + JSON.stringify(store.get('host')));
       return JSON.stringify(store.get('host'));
@@ -202,7 +205,7 @@ ipcMain.handle('get-system', (event, ...args) => {
       // no need for break here
     case 'execute-command':
       debugMsg('running command: ' + JSON.stringify(args[1]));
-      return store.get(host.isremote) ? runAtRemote(args[1]) : shell.exec(args[1]);
+      return store.get('host.isremote') ? runAtRemote(args[1]) : shell.exec(args[1]);
       // no need for break here
     default:
       return undefined;
