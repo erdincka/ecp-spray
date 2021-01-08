@@ -1,4 +1,4 @@
-import { Card, Box, CardHeader, CardBody, CardFooter, Button, Text } from 'grommet';
+import { Card, Box, CardHeader, CardFooter, Button, Text } from 'grommet';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Platforms } from './Platforms';
@@ -11,7 +11,6 @@ export const Home = () => {
         Platforms.map( (p, key) => 
             <Card margin='medium' key={key}>
               <CardHeader pad='small'><Text weight='bold'>{ p.label }</Text> { p.icon }</CardHeader>
-              <CardBody pad='xsmall' align='center'>{ p.description }</CardBody>
               <CardFooter pad='xsmall' background='light-1'>
                 <Button icon={<Github />} 
                   label='Source' 

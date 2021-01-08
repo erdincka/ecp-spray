@@ -31,7 +31,7 @@ export const required = [
       {
         command: 'pip3',
         installCommand: {
-          centos: 'yum install -y python37-pip',
+          centos: 'sudo yum install -y python37-pip',
           ubuntu: 'sudo apt install -y python3-pip'
         }
       }

@@ -8,6 +8,7 @@
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "electron-is": "^3.0.0",
+    "electron-is-dev": "^1.2.0",
     "electron-store": "^6.0.1",
     "grommet": "^2.15.2",
     "grommet-controls": "^3.0.1",
@@ -54,7 +55,6 @@
     "concurrently": "^5.3.0",
     "electron": "^11.0.2",
     "electron-devtools-installer": "^3.1.1",
-    "electron-is-dev": "^1.2.0",
     "electron-packager": "^15.2.0",
     "wait-on": "^5.2.0"
   }

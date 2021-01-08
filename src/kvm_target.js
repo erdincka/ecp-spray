@@ -16,7 +16,7 @@ function Target(props) {
     const fetchData = async () => {
       // get host from stored settings
       const stored = JSON.parse(await ipcRenderer.invoke('get-store-value', 'host'));
-      if (stored.hostname) setHost(stored);
+      if (stored.isremote) setHost(stored);
       // else console.dir(defaultHost);
       // set the platform we operate on
       setPlatform(await ipcRenderer.invoke('get-system', 'platform'));
@@ -136,14 +136,14 @@ function Target(props) {
             checked={ host.isremote || true }
           />
           }
-          { host.isremote && <CheckBox 
+          { platform !== 'linux' && <CheckBox 
             name='useproxy'
             label="Via proxy?"
             toggle
             checked={host.useproxy}
           />}
         </Box>
-        { host.isremote &&
+        { platform !== 'linux' &&
           <Box>
             { host.useproxy && proxyBox
             }
