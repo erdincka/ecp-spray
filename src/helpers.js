@@ -14,17 +14,31 @@ export const sendStatus = (message) => ipcRenderer.invoke('app-message', 'status
 export const sendError = (message) => ipcRenderer.invoke('app-message', 'error', message);
 export const sendOutput = (message) => ipcRenderer.invoke('app-message', 'output', message);
 
+export const boolToString = (config) => {
+  Object.keys(config).forEach( key => { 
+    if (config[key] === true) config[key]='True';
+    if (config[key] === false) config[key]='False';
+  } );
+  return config;
+}
+
 export const commandToCheck = (needed) => {
   const cmd = needed.check || needed.command;
   return (cmd.split(' ').length > 1 ? cmd : 'which ' + cmd);
 }
 
-export const runCommand = async command => await ipcRenderer.invoke('get-system', 'execute-command', command);
+export const readFromStore = async (key) => ipcRenderer.invoke('get-store-value', key);
+export const saveToStore = async (key, val) => ipcRenderer.invoke('set-store-value', key, val);
+export const getPlatform = async () => ipcRenderer.invoke('get-system', 'platform');
+export const canSsh = async () => ipcRenderer.invoke('get-system', 'canRunSsh');
 
-export const runMultiCommand = commands => runCommand(commands.join('; '));
+export const runCommand = async command => ipcRenderer.invoke('get-system', 'execute-command', command);
+
+export const runMultiCommand = async (commands) => runCommand(commands.join('; '));
 
 export const getCommandOutput = (result) => {
-  // nodessh returns object with { stderr,stdout, ... }, shelljs returns string
+  // nodessh returns object with { stderr,stdout, ... }, shelljs returns string (it should return ShellString but didn't work on my tests)
+  // TODO: verify shelljs return object/string, we can't get stderr
   let out, err = '';
   if (result.stdout === undefined) {
     out = result;
@@ -39,14 +53,16 @@ export const getCommandOutput = (result) => {
 
 export const installNeeded = async (need) => {
   const platform = await ipcRenderer.invoke('get-system', 'platform');
-  const os = platform === 'linux' ? await ipcRenderer.invoke('get-system', 'execute-command', 'lsb_release -i')
+
+  // TODO: shouldn't need this, simply use "apt ... || yum ..." in install commands
+  const os = platform === 'linux' ? await runCommand('lsb_release -i')
     .then( res => res.stdout.split(':')[1].trim().toLowerCase() ) // extract os release name
     .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', '')))
     :
     platform;
 
-  const installed = await ipcRenderer.invoke('get-system', 'execute-command', need.installCommand[os])
-    .then( async (res) => {
+  const installed = await runCommand(need.installCommand[os])
+    .then( (res) => {
       let [ out, err ] = getCommandOutput(res);
       sendOutput(out);
       // skip warning on Ubuntu (apt), report anything else
@@ -56,7 +72,7 @@ export const installNeeded = async (need) => {
     .catch( error => sendError(error.message) );
 
     if (installed) {
-      const verified = await ipcRenderer.invoke('get-system', 'execute-command', commandToCheck(need) )
+      const verified = await runCommand( commandToCheck(need) )
         .then( res => {
           let [ out, err ] = getCommandOutput(res);
           if (err) sendError(err);

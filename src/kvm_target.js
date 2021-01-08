@@ -2,11 +2,10 @@ import React from 'react';
 import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { Next } from 'grommet-icons';
 import { PasswordInput } from 'grommet-controls';
-import { sendStatus, sendError, sendOutput } from './helpers';
+import { sendStatus, sendError, sendOutput, runCommand, readFromStore, getPlatform, canSsh } from './helpers';
 import { defaultHost } from './defaultHost';
 
 function Target(props) {
-  const { ipcRenderer } = window.require('electron');
   const setParent = props.setParent;
 
   const [platform, setPlatform] = React.useState();
@@ -15,24 +14,24 @@ function Target(props) {
   React.useEffect(() => {
     const fetchData = async () => {
       // get host from stored settings
-      const stored = JSON.parse(await ipcRenderer.invoke('get-store-value', 'host'));
+      const stored = JSON.parse(await readFromStore('host'));
       if (stored.isremote) setHost(stored);
       // else console.dir(defaultHost);
       // set the platform we operate on
-      setPlatform(await ipcRenderer.invoke('get-system', 'platform'));
+      setPlatform(await getPlatform());
     };
     fetchData();
-  }, [ipcRenderer]);
+  }, []);
 
   const saveHost = () => {
     host.isremote ?
-      ipcRenderer.invoke('get-system', 'canRunSsh')
+      canSsh()
       .then(res => {
         // save settings
-        ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
+        saveToStore('host', JSON.stringify(host))
         .then( () => {
           // check if connection to remote host successful
-          ipcRenderer.invoke('get-system', 'execute-command', 'uname -a')
+          runCommand('uname -a')
             .then( (res) => {
               if (res && res.stderr === '') {
                 sendStatus('Connected to ' + host.username + '@' + host.hostname);
@@ -53,7 +52,7 @@ function Target(props) {
       .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', ''))
       )
     : // if local deployment
-      ipcRenderer.invoke('set-store-value', 'host', JSON.stringify(host))
+      saveToStore('host', JSON.stringify(host))
       .then( () => {
         sendStatus('Target set to localhost');
         setParent(true);

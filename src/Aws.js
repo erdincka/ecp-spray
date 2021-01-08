@@ -1,7 +1,7 @@
 import { Box, Button, Form, FormField, Heading, Layer, Text, TextInput } from 'grommet';
 import { Spinning } from 'grommet-controls';
 import React from 'react';
-import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, getCommandOutput, sendStatus, runCommand } from './helpers';
+import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, getCommandOutput, sendStatus, runCommand, saveToStore, readFromStore } from './helpers';
 import { required } from './aws_requires';
 import { Amazon, Next, StatusGood, StatusWarning } from 'grommet-icons';
 
@@ -14,7 +14,6 @@ export const Aws = () => {
     'user': ''
   });
   const [ loading, setLoading ] = React.useState(false);
-  const { ipcRenderer } = window.require('electron');
   const [ commands, setCommands ] = React.useState([]);
   const repodir = './hcp-demo-env-aws-terraform';
   const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true arch -x86_64 terraform ' + cmd + ' -no-color -input=false '
@@ -22,10 +21,10 @@ export const Aws = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       // Initialize for local execution
-      await ipcRenderer.invoke('set-store-value', 'host.isremote', JSON.stringify(false));
+      await saveToStore('host.isremote', JSON.stringify(false));
 
       // Set config values from store, or from cli if missing
-      let aws = JSON.parse(await ipcRenderer.invoke('get-store-value', 'aws'));
+      let aws = JSON.parse(await readFromStore('aws'));
       // get cli settings, if not exist in stored values
       setLoading(true);
       [ 'access_key', 'secret_key', 'region' ].forEach(async key => {
@@ -56,7 +55,7 @@ export const Aws = () => {
       setLoading(false);
     };
     fetchData();
-  }, [ipcRenderer]);
+  }, []);
 
   const verifyNeed = async (n) => {
     const need = JSON.parse(n);
@@ -90,7 +89,7 @@ export const Aws = () => {
   }
 
   const saveConfigState = async (c) => {
-    await ipcRenderer.invoke('set-store-value', 'aws', JSON.stringify(c));
+    await saveToStore('aws', JSON.stringify(c));
     // Update aws cli configuration/credentials
     runMultiCommand([
       'aws configure set region ' + c['region'],
@@ -100,6 +99,9 @@ export const Aws = () => {
       .then(result => sendOutput(result))
       .catch(error => sendError(error.message));
       sendStatus('aws saved');
+      sendStatus('Make sure you have selected a region which you have enabled required AMIs, \
+       and user with permission to cretae IAM user! \
+       --- actually, region selection is not reflected so we use eu-west-3 (Paris) for now ---');
     };
     
   const prepare = async (c) => {
@@ -150,12 +152,8 @@ export const Aws = () => {
           </Box>
         )
       }
-      {/* { JSON.stringify( 
-        (required.map(req => req.needs.map(n => n.command)).flat().length === commands.length)
-      )} */}
-      {/* { JSON.stringify(commands) } */}
+      
       { // display if all requirements are met
-      // required.map(req => req.needs.map(n => n.command)) && 
       (required.map(req => req.needs.map(n => n.command)).flat().length === commands.length) &&
         <Form
           validate='submit'

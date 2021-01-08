@@ -1,6 +1,6 @@
 export const required = [
   {
-    group: 'LibVirt',
+    group: 'System',
     needs: [
       {
         command: 'virsh',
@@ -70,7 +70,7 @@ export const required = [
       },
       {
         command: 'ipcalc',
-        check: 'python3 -m pip show ipcalc',
+        check: 'python3 -m pip show ipcalc | grep Location: | awk \'{print $2"/ipcalc"}\'',
         installCommand: {
           centos: 'pip3 install --user ipcalc six',
           ubuntu: 'pip3 install --user ipcalc six'
@@ -78,7 +78,7 @@ export const required = [
       },
       {
         command: 'hpecp',
-        check: 'python3 -m pip show hpecp',
+        check: 'python3 -m pip show hpecp | grep Location: | awk \'{print $2"/hpecp"}\'',
         installCommand: {
           centos: 'pip3 install --user hpecp',
           ubuntu: 'pip3 install --user hpecp'

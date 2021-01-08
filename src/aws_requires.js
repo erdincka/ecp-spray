@@ -40,34 +40,6 @@ export const required = [
   {
     group: 'Utils',
     needs: [
-      // {
-      //   command: 'ssh-keygen',
-      //   installCommand: {
-      //     centos: 'sudo yum install -y openssh',
-      //     ubuntu: 'sudo apt install -y openssh-server'
-      //   }
-      // },
-      // {
-      //   command: 'nc',
-      //   installCommand: {
-      //     centos: 'sudo dnf install -y nmap-ncat',
-      //     ubuntu: '' // already included in release
-      //   }
-      // },
-      // {
-      //   command: 'brctl',
-      //   installCommand: {
-      //     centos: 'sudo yum install -y bridge-utils',
-      //     ubuntu: 'sudo apt install -y bridge-utils'
-      //   }
-      // },
-      // {
-      //   command: 'curl',
-      //   installCommand: {
-      //     centos: 'sudo dnf install -y curl',
-      //     ubuntu: '' // already included in release
-      //   }
-      // },
       {
         command: 'git',
         installCommand: {

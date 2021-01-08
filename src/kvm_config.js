@@ -1,23 +1,23 @@
 import React from 'react';
 import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { Next } from 'grommet-icons';
+import { boolToString, sendStatus } from './helpers';
 
 function Config(props) {
   const [config, setConfig] = React.useState({});
-  const { ipcRenderer } = window.require("electron");
   const setParent = props.setParent;
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const conf = await ipcRenderer.invoke('get-store-value', props.conf);
+      const conf = await readFromStore(props.conf);
       setConfig( { ...JSON.parse(conf) } );
     };
     fetchData();
-  }, [ipcRenderer, props.conf]);
+  }, [props.conf]);
   
   const saveState = async (c) => {
-    await ipcRenderer.invoke('set-store-value', props.conf, JSON.stringify(c));
-    ipcRenderer.invoke('app-message', 'status', props.conf + ' saved');
+    await saveToStore(props.conf, JSON.stringify(c));
+    sendStatus(props.conf + ' saved');
     setParent(true);
   }
 
@@ -25,22 +25,13 @@ function Config(props) {
     return config[key] === 'True' || config[key] === 'False';
   }
 
-  const processConfig = next => {
-    Object.keys(next).forEach( key => { 
-      // Convert boolean to string
-      if (next[key] === true) next[key]='True';
-      if (next[key] === false) next[key]='False';
-    } ) // end of forEach
-    setConfig(next);
-  }
-
   return (
     <Box pad="small"> 
       <Form
         value={config}
-        onChange={ next => processConfig(next) }
-        // onReset={() => setConfig(props.conf)}
+        onChange={ next => setConfig(boolToString(next)) }
         onSubmit={ event => saveState(event.value) }
+        // onReset={() => setConfig(props.conf)}
       >
         {/* { JSON.stringify(config) } */}
         { 

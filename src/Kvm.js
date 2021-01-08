@@ -5,14 +5,13 @@ import Target from './kvm_target';
 import Requirements from './kvm_requirements';
 import { StatusGood, StatusWarning } from 'grommet-icons';
 import { Previous } from 'grommet-icons';
-import { sendError, sendOutput } from './helpers';
+import { runCommand, runMultiCommand, sendError, sendOutput } from './helpers';
 import { Spinning } from 'grommet-controls';
 
 export const Kvm = () => {
   const [ ready, setReady ] = useState(false);
   const [ page, setPage ] = useState('target');
   const [ loading, setLoading ] = React.useState(false);
-  const { ipcRenderer } = window.require('electron');
 
   const deploy = async () => {    
     const repodir = 'hcp-demo-kvm-shell';
@@ -28,7 +27,7 @@ export const Kvm = () => {
     }
 
     setLoading(true);
-    ipcRenderer.invoke('get-system', 'execute-command', '[ -d '+ repodir + ' ] || git clone https://github.com/erdincka/hcp-demo-kvm-shell.git ' + repodir)
+    runCommand('[ -d '+ repodir + ' ] || git clone https://github.com/erdincka/hcp-demo-kvm-shell.git ' + repodir)
     .then( async res => {
       setLoading(false);
       // cancel if we can't find repo files
@@ -36,8 +35,8 @@ export const Kvm = () => {
         sendError(res.stderr);
       }
       else { // safe to proceed
-        let kvm = JSON.parse(await ipcRenderer.invoke('get-store-value', 'kvm'));
-        let ezmeral = JSON.parse(await ipcRenderer.invoke('get-store-value', 'ezmeral'));
+        let kvm = JSON.parse(await readFromStore('kvm'));
+        let ezmeral = JSON.parse(await readFromStore('ezmeral'));
 
         // TODO: implement CIDR in original kvm scripts
         [ kvm.GATW_PUB_IP, kvm.GATW_PUB_PREFIX ] = kvm.GATW_PUB_CIDR.split('/');
@@ -49,12 +48,16 @@ export const Kvm = () => {
         // combine all replacements in single command
         const cmd = 'sed -i -e ' + replace(kvm).concat(replace(ezmeral)).join(' -e ') +  ' ./' + repodir + '/etc/kvm_config.sh';
         // console.dir(cmd);
-        ipcRenderer.invoke('get-system', 'execute-command', cmd)
+        runCommand(cmd)
           .then(res => {
             if (res.stdout) sendOutput(res.stdout);
             if (res.stderr) sendError(res.stderr)
             else {
-              ipcRenderer.invoke('get-system', 'execute-command', 'pushd ' + repodir + ' && ./kvm_create_new.sh && popd')
+              runMultiCommand([
+                'pushd ' + repodir + ' > /dev/null',
+                './kvm_create_new.sh',
+                'popd > /dev/null'
+              ])
               .then( res => {
                 if (res.stdout) sendOutput(res.stdout);
                 if (res.stderr) sendError(res.stderr);
