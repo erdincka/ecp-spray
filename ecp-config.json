@@ -1,15 +1,9 @@
 {
-  "ezmeral" : {
-    "DOMAIN": "ecp.demo",
-    "EPIC_FILENAME": "hpe-cp-rhel-release-5.1-3011.bin",
-    "EPIC_DL_URL": "http://10.1.1.202/files/ezmeral/"
-  },
   "kvm": {
+    "EPIC_DL_URL": "http://10.1.1.202/files/ezmeral/hpe-cp-rhel-release-5.1-3011.bin",
     "PROJECT_DIR": "/data/ecp",
-    "CENTOS_FILENAME": "CentOS-7-x86_64-GenericCloud-2003.qcow2",
-    "CENTOS_DL_URL": "http://10.1.1.202/files/osimages/",
-    "GATW_PUB_HOST": "ecp",
-    "PUBLIC_DOMAIN": "garage.dubai",
+    "CENTOS_DL_URL": "http://10.1.1.202/files/osimages/CentOS-7-x86_64-GenericCloud-2003.qcow2",
+    "GATW_PUB_FQDN": "ecp.garage.dubai",
     "GATW_PUB_CIDR": "10.1.1.22/24",
     "GATW_PUB_GW": "10.1.1.1"
   },

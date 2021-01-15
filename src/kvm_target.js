@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { Next } from 'grommet-icons';
 import { PasswordInput } from 'grommet-controls';
-import { sendStatus, sendError, sendOutput, runCommand, readFromStore, getPlatform, canSsh } from './helpers';
+import { sendStatus, sendError, sendOutput, runCommand, readFromStore, getPlatform, canSsh, saveToStore } from './helpers';
 import { defaultHost } from './defaultHost';
 
 function Target(props) {

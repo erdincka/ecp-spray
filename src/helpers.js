@@ -52,21 +52,12 @@ export const getCommandOutput = (result) => {
 }
 
 export const installNeeded = async (need) => {
-  const platform = await ipcRenderer.invoke('get-system', 'platform');
-
-  // TODO: shouldn't need this, simply use "apt ... || yum ..." in install commands
-  const os = platform === 'linux' ? await runCommand('lsb_release -i')
-    .then( res => res.stdout.split(':')[1].trim().toLowerCase() ) // extract os release name
-    .catch(error => sendError(error.message.replace('Error invoking remote method \'get-system\':', '')))
-    :
-    platform;
-
-  const installed = await runCommand(need.installCommand[os])
+  const installed = await runCommand(need.installCommand)
     .then( (res) => {
       let [ out, err ] = getCommandOutput(res);
       sendOutput(out);
       // skip warning on Ubuntu (apt), report anything else
-      if (err && ! (os === 'Ubuntu' && err === 'WARNING: apt does not have a stable CLI interface. Use with caution in scripts.' )) sendError(err)
+      if (err && err !== 'WARNING: apt does not have a stable CLI interface. Use with caution in scripts.' ) sendError(err)
       else return out;
     })
     .catch( error => sendError(error.message) );

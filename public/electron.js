@@ -97,7 +97,7 @@ const { ipcMain } = require('electron');
 
 const shell = require('shelljs');
 shell.config.execPath = String(shell.which('node'));
-
+shell.config.fatal = true;
 
 // update interface with messages
 // args[0] => status code (status, error, output)
@@ -138,7 +138,7 @@ ipcMain.handle('set-store-value', (event, key, value) => {
 	store.set(key, JSON.parse(value));
 });
 
-const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', user, opt, host].join(' ');
+const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', user, opt || '', host].join(' ');
 
 // operate on store.key('host')
 const getTarget = () => {
@@ -152,13 +152,13 @@ const getTarget = () => {
       connectTo['host'] = host.proxyhostname;
       connectTo['username'] = host.proxyusername;
       if (host.useproxykeyfile) {
-        connectTo['exec'] = sshcmd(host.username, host.hostname, '-i ' + host.keyfile.replace('~', os.homedir())) + ' ';
         connectTo['privateKey'] = host.proxykeyfile.replace('~', os.homedir());
+        connectTo['exec'] = sshcmd(host.username, host.hostname, '-i ' + host.keyfile.replace('~', os.homedir()));
       }
       else {
         connectTo['password'] = host.proxypassword;
         connectTo['tryKeyboard'] = true;
-        connectTo['exec'] = sshcmd(host.username, host.hostname) + ' ';
+        connectTo['exec'] = sshcmd(host.username, host.hostname);
       }
     }
     else {
@@ -173,7 +173,7 @@ const getTarget = () => {
     }
   }
   else {
-    connectTo = { host: 'localhost' };
+    connectTo = { host: 'localhost' }; // actually this is not used (called from runAtRemote only)
   }
   debugMsg('returned target: ' + JSON.stringify(connectTo));
   return connectTo;
@@ -181,15 +181,15 @@ const getTarget = () => {
 
 const runAtRemote = async (cmd) => {
   const host = getTarget();
-  const exec = host['exec'] + '"' + cmd + '"';
+  // const exec = host['exec'] + ' "' + cmd + '"';
   debugMsg('ssh target: ' + JSON.stringify(host));
-  debugMsg('ssh to execute command ' + exec);
+  debugMsg('ssh to execute command ' + host['exec'] + " " + cmd);
   // open a connection if not exist
   if (!(ssh.isConnected() && ssh.connection)) {
     debugMsg('Need a new connection');
     await ssh.connect(host);
   }
-  return ssh.execCommand(exec);
+  return ssh.exec(host['exec'], cmd.split(' ') || [], { stream: 'both' });
 }
 
 // Various system command processing

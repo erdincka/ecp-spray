@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, CheckBox, Form, FormField, TextInput } from 'grommet';
 import { Next } from 'grommet-icons';
-import { boolToString, sendStatus } from './helpers';
+import { boolToString, readFromStore, saveToStore, sendStatus } from './helpers';
 
 function Config(props) {
   const [config, setConfig] = React.useState({});
@@ -46,8 +46,8 @@ function Config(props) {
                 toggle={true}
               /> 
               :
-              <FormField name={key} htmlfor={key} label={key} key={key} >
-                  <TextInput id={key} name={key} value={config[key]} disabled={ ( key === 'KVM_NETWORK' ) } />
+              ( key !== 'KVM_NETWORK' ) && <FormField name={key} htmlfor={key} label={key} key={key} >
+                  <TextInput id={key} name={key} value={config[key]} />
               </FormField>
         )}
         <Box direction='row' gap='medium' justify='end'>

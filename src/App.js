@@ -52,7 +52,7 @@ function App() {
 
           { expert && 
           <Box gridArea='stat'>
-            <Box margin='small'>
+            <Box margin='small' height='small'>
               {/* <Text color='status-ok' weight='bold'>Status</Text> */}
               <TextArea fill icon={<StatusGood />} value={ status.join('\n') } placeholder='Status messages' />
             </Box> 

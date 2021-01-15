@@ -5,7 +5,7 @@ import Target from './kvm_target';
 import Requirements from './kvm_requirements';
 import { StatusGood, StatusWarning } from 'grommet-icons';
 import { Previous } from 'grommet-icons';
-import { runCommand, runMultiCommand, sendError, sendOutput } from './helpers';
+import { readFromStore, runCommand, sendError, sendOutput } from './helpers';
 import { Spinning } from 'grommet-controls';
 
 export const Kvm = () => {
@@ -20,45 +20,46 @@ export const Kvm = () => {
       let patterns = [];
       Object.keys(obj).forEach( val => {
         const replaceVal = '\'s+^' + val + '=.*$+' + val + '="' + obj[val] + '"+\'';
-        // console.dir(replaceVal);
         patterns.push(replaceVal);
       })
       return patterns;
     }
 
     setLoading(true);
-    runCommand('[ -d '+ repodir + ' ] || git clone https://github.com/erdincka/hcp-demo-kvm-shell.git ' + repodir)
+
+    runCommand('[ -d '+ repodir + ' ] || git clone -q https://github.com/erdincka/hcp-demo-kvm-shell.git ' + repodir)
     .then( async res => {
-      setLoading(false);
       // cancel if we can't find repo files
       if (res.stderr) {
         sendError(res.stderr);
       }
       else { // safe to proceed
         let kvm = JSON.parse(await readFromStore('kvm'));
-        let ezmeral = JSON.parse(await readFromStore('ezmeral'));
 
         // TODO: implement CIDR in original kvm scripts
         [ kvm.GATW_PUB_IP, kvm.GATW_PUB_PREFIX ] = kvm.GATW_PUB_CIDR.split('/');
         delete kvm.GATW_PUB_CIDR;
-        // TODO: implement URL merge in original kvm scripts
-        kvm.CENTOS_DL_URL += kvm.CENTOS_FILENAME;
-        ezmeral.EPIC_DL_URL += ezmeral.EPIC_FILENAME;
+        // TODO: implement full hostname in original kvm scripts
+        const [ host, ...domain ] = kvm.GATW_PUB_FQDN.split('.');
+        kvm.GATW_PUB_HOST = host;
+        kvm.PUBLIC_DOMAIN = domain.join('.');
+        delete kvm.GATW_PUB_FQDN;
+        // TODO: implement URL desconstruction in original kvm scripts
+        kvm.CENTOS_FILENAME = kvm.CENTOS_DL_URL.split('/').pop();
+        kvm.EPIC_FILENAME = kvm.EPIC_DL_URL.split('/').pop();
 
         // combine all replacements in single command
-        const cmd = 'sed -i -e ' + replace(kvm).concat(replace(ezmeral)).join(' -e ') +  ' ./' + repodir + '/etc/kvm_config.sh';
-        // console.dir(cmd);
+        const cmd = 'sed -i -e ' + replace(kvm).join(' -e ') +  ' ./' + repodir + '/etc/kvm_config.sh';
+        
         runCommand(cmd)
           .then(res => {
             if (res.stdout) sendOutput(res.stdout);
-            if (res.stderr) sendError(res.stderr)
+            if (res.stderr) sendError(res.stderr) && setLoading(false);
             else {
-              runMultiCommand([
-                'pushd ' + repodir + ' > /dev/null',
-                './kvm_create_new.sh',
-                'popd > /dev/null'
-              ])
+              runCommand(`pushd ${repodir}; TERM=xterm PATH=$PATH:$(python3 -m site --user-base)/bin ./kvm_create_new.sh; popd`)
               .then( res => {
+                // console.dir(res);
+                setLoading(false);
                 if (res.stdout) sendOutput(res.stdout);
                 if (res.stderr) sendError(res.stderr);
               })
@@ -67,7 +68,7 @@ export const Kvm = () => {
           })
           .catch(err => sendError(err.message));
       }
-    })
+    });
   }
 
   return (
@@ -83,8 +84,7 @@ export const Kvm = () => {
         <Text weight='bold'
           margin='none'
         >
-        { page === 'target' ? 'Target' : page === 'requirements' ? 'Requirements'
-          : page === 'kvm' ? 'KVM Settings' : 'Ezmeral Settings' }
+        { page === 'target' ? 'Target' : page === 'requirements' ? 'Requirements' : 'KVM Settings' }
         </Text>
         { ready ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
       </Box>
@@ -96,16 +96,11 @@ export const Kvm = () => {
       
       { page === 'requirements' &&
           <Requirements setParent={ (t) => { if (t) setPage('kvm') } } />
-      }
+        }
       {
         page === 'kvm' &&
-          <Config conf={ page } setParent={ (t) => { if (t) setPage('ezmeral') } } />
+        <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } />
       }
-      {
-        page === 'ezmeral' &&
-          <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } />
-      }
-
       {
         ready &&
         <Button 

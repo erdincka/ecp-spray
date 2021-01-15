@@ -1,9 +1,9 @@
 import { Box, Button, Form, FormField, Heading, Layer, Text, TextInput } from 'grommet';
-import { Spinning } from 'grommet-controls';
 import React from 'react';
 import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, getCommandOutput, sendStatus, runCommand, saveToStore, readFromStore } from './helpers';
 import { required } from './aws_requires';
 import { Amazon, Next, StatusGood, StatusWarning } from 'grommet-icons';
+import { Spinning } from 'grommet-controls';
 
 export const Aws = () => {
   const [ ready, setReady ] = React.useState(false);
@@ -99,9 +99,8 @@ export const Aws = () => {
       .then(result => sendOutput(result))
       .catch(error => sendError(error.message));
       sendStatus('aws saved');
-      sendStatus('Make sure you have selected a region which you have enabled required AMIs, \
-       and user with permission to cretae IAM user! \
-       --- actually, region selection is not reflected so we use eu-west-3 (Paris) for now ---');
+      sendStatus('Make sure you have selected a region which you have enabled required AMIs, and user with permission to cretae IAM user!');
+      // actually, region selection is not reflected so we use eu-west-3 (Paris) for now
     };
     
   const prepare = async (c) => {
@@ -115,7 +114,7 @@ export const Aws = () => {
     let commands = [
       'pushd ' + repodir + ' > /dev/null',
       // workaround for my M1 MacOS
-      'PATH="${PATH}":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/create_new_environment_from_scratch.sh',
+      'PATH="$PATH":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/create_new_environment_from_scratch.sh',
       'popd > /dev/null'
     ]
     runMultiCommand(commands)

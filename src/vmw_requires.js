@@ -3,13 +3,6 @@ export const required = [
     group: 'System',
     needs: [
       {
-        command: 'aws',
-        installCommand: {
-          linux: 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && sudo ./aws/install',
-          darwin: 'curl "https://awscli.amazonaws.com/AWSCLIV2-2.0.30.pkg" -o "AWSCLIV2.pkg" && sudo installer -pkg AWSCLIV2.pkg -target /'
-        }
-      },
-      {
         command: 'terraform',
         installCommand: {
           linux: 'curl "https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip" -o "terraform.zip" && unzip terraform.zip && sudo mv terraform /usr/local/bin/',
@@ -49,7 +42,7 @@ export const required = [
       },
       {
         command: 'ipcalc',
-        check: 'python3 -m pip show ipcalc > /dev/null 2>&1 && echo /fakedir/ipcalc',
+        check: 'python3 -m pip show ipcalc | grep Location: | awk \'{print $2"/ipcalc"}\'',
         installCommand: {
           linux: 'pip3 install --user ipcalc six',
           darwin: 'pip3 install --user ipcalc six'
@@ -57,7 +50,7 @@ export const required = [
       },
       {
         command: 'hpecp',
-        check: 'python3 -m pip show hpecp > /dev/null 2>&1 && echo /fakedir/hpecp',
+        check: 'python3 -m pip show hpecp | grep Location: | awk \'{print $2"/hpecp"}\'',
         installCommand: {
           linux: 'pip3 install --user hpecp',
           darwin: 'pip3 install --user hpecp'
