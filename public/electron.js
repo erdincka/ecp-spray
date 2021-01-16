@@ -81,11 +81,6 @@ const Store = require('electron-store');
 const store = new Store();
 
 const updateStoreStatus = (newValue, oldValue) => {
-  // win.webContents.send('mainprocess-output', JSON.stringify(newValue));
-  // console.dir(newValue)
-  // https://stackoverflow.com/a/57899958/7033031
-  // const c = Object.entries(newValue).reduce((c, [k, v]) => Object.assign(c, oldValue[k] ? {} : { [k]: v }), {});
-  // debugMsg('Changed store val: ' + JSON.stringify(c));
   debugMsg('Set store val to: ' + JSON.stringify(newValue));
 }
 const unsubscribe = store.onDidAnyChange(updateStoreStatus);
@@ -121,7 +116,7 @@ ipcMain.handle('app-message', (event, ...args) => {
 
 fs = require('fs');
 
-if (store.has('ezmeral')) console.log('defaults loaded')
+if (store.has('host')) console.log('defaults loaded')
 else {
   fs.readFile('ecp-config.json', 'utf8', (error, data) => {
     if (error) console.dir('error reading defaults')
