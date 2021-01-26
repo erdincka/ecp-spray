@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { Box, Button, Layer, Text } from 'grommet';
+import { Box, Button, Layer } from 'grommet';
 import Config from './kvm_config';
 import Target from './host_target';
 import Requirements from './kvm_requirements';
-import { StatusGood, StatusWarning } from 'grommet-icons';
-import { Previous } from 'grommet-icons';
 import { readFromStore, runCommand, sendError, sendOutput } from './helpers';
 import { Spinning } from 'grommet-controls';
 
 export const Kvm = () => {
-  const [ ready, setReady ] = useState(false);
   const [ page, setPage ] = useState('target');
+  const [ ready, setReady ] = useState(false);
   const [ loading, setLoading ] = React.useState(false);
 
   const deploy = async () => {    
@@ -74,35 +72,10 @@ export const Kvm = () => {
   return (
     <Box fill pad='small'>
       { loading && <Layer animation='fadeIn' ><Spinning size='large' /></Layer> }
-      <Box direction='row' justify='between' align='center'>
-        {/* <Button 
-          hoverIndicator
-          label='Go back' plain
-          icon={ <Previous />}
-          onClick={ () => setPage('target') }
-        /> */}
-        <Text weight='bold'
-          margin='none'
-        >
-        { page === 'target' ? 'Target' : page === 'requirements' ? 'Requirements' : 'KVM Settings' }
-        </Text>
-        { ready ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' /> }
-      </Box>
-
-      {
-        page === 'target' &&
-        <Target setParent={ (t) => { if (t) setPage('requirements') } } />
-      }
-      
-      { page === 'requirements' &&
-          <Requirements setParent={ (t) => { if (t) setPage('kvm') } } />
-        }
-      {
-        page === 'kvm' &&
-        <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } />
-      }
-      {
-        ready &&
+      { page === 'target' && <Target setParent={ (t) => { if (t) setPage('requirements') } } /> }
+      { page === 'requirements' && <Requirements setParent={ (t) => { if (t) setPage('config') } } /> }
+      { page === 'config' && <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } /> }
+      { ready &&
         <Button 
           onClick={ () => deploy() }
           primary

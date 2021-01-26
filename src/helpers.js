@@ -53,7 +53,7 @@ export const getCommandOutput = (result) => {
 
 export const installNeeded = async (need) => {
   const isremote = await readFromStore('host')['isremote'];
-  const command = isremote ? need.installCommand['linux'] : need.installCommand[await getPlatform()];
+  const command = isremote ? need.install['linux'] : need.install[await getPlatform()];
   const installed = await runCommand(command)
     .then( (res) => {
       let [ out, err ] = getCommandOutput(res);

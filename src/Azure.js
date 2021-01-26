@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, FormField, Heading, Layer, Select, Text, TextInput } from 'grommet';
+import { Box, Button, FormField, Layer, Select, Text, TextInput } from 'grommet';
 import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, getCommandOutput, runCommand, saveToStore, readFromStore } from './helpers';
 import { required } from './azure_requires';
 import { Next, StatusGood, StatusWarning, Windows } from 'grommet-icons';
@@ -53,7 +53,7 @@ export function Azure() {
       
       // Check if requirements are available
       let cmds = [];
-      required.forEach( group => group.needs.forEach( need => cmds.push(commandToCheck(need)) ) );
+      required.forEach( need => cmds.push(commandToCheck(need)) );
       setLoading(true);
       runMultiCommand(cmds)
         .then(result => {
@@ -145,32 +145,25 @@ export function Azure() {
     <Box gap='small' pad='xsmall' fill flex={false}>
     { loading && <Layer animation='fadeIn' onEsc={ setLoading(false) } ><Spinning size='large' /></Layer> }
     {
-      required.map(req => 
-        <Box key={req.group} pad='small'>
-          <Heading level='5' margin='none' color='neutral-2'>{req.group}</Heading>
-          { 
-            req.needs && req.needs.map( need => 
-              <Box margin='small' direction='row' key={ need.command } justify='between' align='center' >
-                <Text >{ need.command }</Text>
-                <Box direction='row' align='center'>
-                  <Button 
-                    disabled={ loading || commands.includes(need.command) } 
-                    label={ commands.includes(need.command) ? 'Ready' : 'Install' }
-                    color={ commands.includes(need.command) ? '' : 'plain' }
-                    id={ JSON.stringify(need) }
-                    onClick={ event => verifyNeed(event.target.id) }
-                  />
-                  { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
-                </Box>
-              </Box>
-            )
-          }
+      required.map(need => 
+        <Box margin='small' direction='row' key={ need.command } justify='between' align='center' >
+          <Text >{ need.command }</Text>
+          <Box direction='row' align='center'>
+            <Button 
+              disabled={ loading || commands.includes(need.command) } 
+              label={ commands.includes(need.command) ? 'Ready' : 'Install' }
+              color={ commands.includes(need.command) ? '' : 'plain' }
+              id={ JSON.stringify(need) }
+              onClick={ event => verifyNeed(event.target.id) }
+            />
+            { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
+          </Box>
         </Box>
       )
     }
     
     { // display if all requirements are met
-    (required.map(group => group.needs.map(n => n.command)).flat().length === commands.length) && 
+    (required.length === commands.length) && 
     <Box>
       <FormField name='subscription' htmlfor='subscription' label='Azure Subscription' required >
         <Select

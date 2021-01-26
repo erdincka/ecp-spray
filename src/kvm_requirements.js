@@ -18,7 +18,7 @@ function Requirements(props) {
       const platform = await getPlatform();
       if ( platform !== 'linux' ) await saveToStore('host.isremote', JSON.stringify(true));
       let cmds = [];
-      required.forEach( req => req.needs.forEach( need => cmds.push(commandToCheck(need)) ) );
+      required.forEach( need => cmds.push(commandToCheck(need)) );
       cmds.push('sudo virsh net-list --all');
       // check commands and parse output
       runMultiCommand(cmds)
@@ -67,26 +67,19 @@ function Requirements(props) {
       { loading && <Layer animation='fadeIn' ><Spinning size='large' /></Layer> }
 
       {
-        required.map(req => 
-          <Box key={req.group} pad='small'>
-            <Heading level='5' margin='none' color='neutral-2'>{req.group}</Heading>
-            { 
-              req.needs && req.needs.map( need => 
-                <Box margin='small' direction='row' key={ need.command } justify='between' align='center' >
-                  <Text >{ need.command }</Text>
-                  <Box direction='row' align='center'>
-                    <Button 
-                      disabled={ loading || commands.includes(need.command) } 
-                      label={ commands.includes(need.command) ? 'Ready' : 'Install' }
-                      color={ commands.includes(need.command) ? '' : 'plain' }
-                      id={ JSON.stringify(need) }
-                      onClick={ event => verifyNeed(event.target.id) }
-                    />
-                    { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
-                  </Box>
-                </Box>
-              )
-            }
+        required.map(need =>
+          <Box margin='small' direction='row' key={ need.command } justify='between' align='center' >
+            <Text >{ need.command }</Text>
+            <Box direction='row' align='center'>
+              <Button 
+                disabled={ loading || commands.includes(need.command) } 
+                label={ commands.includes(need.command) ? 'Ready' : 'Install' }
+                color={ commands.includes(need.command) ? '' : 'plain' }
+                id={ JSON.stringify(need) }
+                onClick={ event => verifyNeed(event.target.id) }
+              />
+              { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
+            </Box>
           </Box>
         )
       }

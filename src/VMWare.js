@@ -1,7 +1,7 @@
 import React from 'react';
 import { Spinning } from 'grommet-controls';
-import { Box, Button, CheckBox, Form, FormField, Heading, Layer, Text, TextInput } from 'grommet';
-import { sendError, sendOutput, runMultiCommand, installNeeded, readFromStore, commandToCheck, getCommandOutput, saveToStore, getPlatform, sendStatus } from './helpers';
+import { Box, Button, CheckBox, FormField, Layer, Text, TextInput } from 'grommet';
+import { sendError, sendOutput, runMultiCommand, installNeeded, readFromStore, commandToCheck, getCommandOutput, saveToStore, sendStatus } from './helpers';
 import { required } from './vmware_requires';
 import { Next, StatusGood, StatusWarning, Vmware } from 'grommet-icons';
 import Target from './host_target';
@@ -31,7 +31,7 @@ export const VMWare = () => {
     if (status) {
       // Check if requirements are available
       let cmds = [];
-      required.forEach( group => group.needs.forEach( need => cmds.push(commandToCheck(need)) ) );
+      required.forEach( need => cmds.push(commandToCheck(need)) );
       setLoading(true);
       runMultiCommand(cmds)
       .then(result => {
@@ -118,26 +118,19 @@ export const VMWare = () => {
     />
     { host.isremote && <Target setParent={ (res) => updateHost(res) } /> }
     {
-        targetready && required.map(req => 
-          <Box key={req.group} pad='xsmall'>
-            <Heading level='5' margin='none' color='neutral-2'>{req.group}</Heading>
-            { 
-              req.needs && req.needs.map( need => 
-                <Box margin='none' direction='row' key={ need.command } justify='between' align='center' >
-                  <Text >{ need.command }</Text>
-                  <Box direction='row' align='center'>
-                    <Button 
-                      disabled={ loading || commands.includes(need.command) } 
-                      label={ commands.includes(need.command) ? 'Ready' : 'Install' }
-                      color={ commands.includes(need.command) ? '' : 'plain' }
-                      id={ JSON.stringify(need) }
-                      onClick={ event => verifyNeed(event.target.id) }
-                    />
-                    { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
-                  </Box>
-                </Box>
-              )
-            }
+        targetready && required.map(need =>
+          <Box margin='none' direction='row' key={ need.command } justify='between' align='center' >
+            <Text >{ need.command }</Text>
+            <Box direction='row' align='center'>
+              <Button 
+                disabled={ loading || commands.includes(need.command) } 
+                label={ commands.includes(need.command) ? 'Ready' : 'Install' }
+                color={ commands.includes(need.command) ? '' : 'plain' }
+                id={ JSON.stringify(need) }
+                onClick={ event => verifyNeed(event.target.id) }
+              />
+              { commands.includes(need.command) ? <StatusGood color='status-ok' /> : <StatusWarning color='status-warning' />}
+            </Box>
           </Box>
         )
       }
