@@ -30,3 +30,5 @@ hcp-demo-env-aws-terraform
 AWSCLIV2.pkg
 terraform.zip
 ezmeral-demo-azure-terraform
+ezmeral-demo-vmware-terraform
+.eslintcache

@@ -2,7 +2,7 @@ import { Ubuntu, Windows, Redhat, Vmware } from 'grommet-icons';
 import { Aws } from './Aws';
 import { Azure } from './Azure';
 import { Kvm } from './Kvm';
-import { VMW } from './VMW';
+import { VMWare } from './VMWare';
 
 export const Platforms = [
   {
@@ -19,7 +19,7 @@ export const Platforms = [
     'description': 'Deploy Ezmeral on Azure VMs',
     'icon': <Windows color='plain' />,
     'component': <Azure />,
-    'url': 'https://github.com/hpe-container-platform-community/demo-env-azure-notebook'
+    'url': 'https://github.com/erdincka/ezmeral-demo-azure-terraform'
   },
   {
     'name': 'kvm',
@@ -34,7 +34,7 @@ export const Platforms = [
     'label':'ECP on vSphere',
     'description': 'Deploy Ezmeral on vSphere VMs',
     'icon': <Vmware  />,
-    'component': <VMW />,
-    'url':''
+    'component': <VMWare />,
+    'url':'https://github.com/erdincka/ezmeral-demo-vmware-terraform/'
   }
 ]

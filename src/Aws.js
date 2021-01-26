@@ -11,10 +11,12 @@ export const Aws = () => {
     'access_key': '',
     'secret_key': '',
     'region': '',
-    'user': ''
+    'user': '',
+    'epicurl': ''
   });
   const [ loading, setLoading ] = React.useState(false);
   const [ commands, setCommands ] = React.useState([]);
+  const repourl = 'https://github.com/hpe-container-platform-community/hcp-demo-env-aws-terraform';
   const repodir = './hcp-demo-env-aws-terraform';
   const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true arch -x86_64 terraform ' + cmd + ' -no-color -input=false '
 
@@ -28,11 +30,10 @@ export const Aws = () => {
       // get cli settings, if not exist in stored values
       setLoading(true);
       [ 'access_key', 'secret_key', 'region' ].forEach(async key => {
-        if ( !aws[key] )
-          aws[key] = await runCommand('aws --output json configure get ' + key);
+        if (! aws[key]) aws[key] = (await runCommand('aws --output json configure get ' + key)).trim();
       });
       setLoading(false);
-      setConfig(c => Object.assign(c, aws));
+      setConfig(aws);
 
       // Check if requirements are available
       let cmds = [];
@@ -69,9 +70,11 @@ export const Aws = () => {
 
   const updateRepoFiles = () => {
     let commands = [
-      '[ -d ' + repodir + ' ] || git clone https://github.com/hpe-container-platform-community/hcp-demo-env-aws-terraform ' + repodir,
+      '[ -d ' + repodir + ' ] || git clone ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
-      'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
+      // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
+      'sed -i \'\' \'s/^region.*=.*$/region = "' + config.region + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' -- \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + config.epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
       'sed \'s/<<your-name>>/' + config.user + '/g\' ./etc/bluedata_infra.tfvars_example > ./etc/bluedata_infra.tfvars'
     ];
     // TODO: Stick to regions within tfvars (might want to add others)
@@ -79,7 +82,6 @@ export const Aws = () => {
     // if ( config.region !== 'eu-west-3' ) commands.push('sed -i \'\' \'s/eu-west-3/' + config.region + '/g\' ./etc/bluedata_infra.tfvars'); 
     // if ( config.region !== 'eu-west-1' ) commands.push('sed -i \'\' \'s/eu-west-1/' + config.region + '/g\' ./etc/bluedata_infra.tfvars'); 
     commands.push('echo tfvars updated');
-    // Workaround for my M1 MacOS
     commands.push(tfcommand('init'));
     // commands.push(tfcommand(plan) + ' -var-file=etc/bluedata_infra.tfvars -var="client_cidr_block=$(curl -s http://ifconfig.me/ip)/32"');
     commands.push('popd > /dev/null'); // exit the repodir
@@ -98,9 +100,7 @@ export const Aws = () => {
     ])
       .then(result => sendOutput(result))
       .catch(error => sendError(error.message));
-      sendStatus('aws saved');
-      sendStatus('Make sure you have selected a region which you have enabled required AMIs, and user with permission to cretae IAM user!');
-      // actually, region selection is not reflected so we use eu-west-3 (Paris) for now
+      sendStatus('aws settings are saved');
     };
     
   const prepare = async (c) => {
@@ -113,7 +113,7 @@ export const Aws = () => {
   const deploy = () => {
     let commands = [
       'pushd ' + repodir + ' > /dev/null',
-      // workaround for my M1 MacOS
+      // workaround for my M1 Mac
       'PATH="$PATH":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/create_new_environment_from_scratch.sh',
       'popd > /dev/null'
     ]
@@ -156,7 +156,7 @@ export const Aws = () => {
       (required.map(req => req.needs.map(n => n.command)).flat().length === commands.length) &&
         <Form
           validate='submit'
-          value={config}
+          value={ config }
           onChange={ next => setConfig(next) }
           onSubmit={ event => prepare(event.value) }
         >
@@ -177,8 +177,8 @@ export const Aws = () => {
           color='plain' 
           label='Deploy on AWS' 
           icon={ <Amazon /> } />
-
       }
+
     </Box>
   )
 }

@@ -8,8 +8,8 @@ function createWindow() {
   win = isDev ? new BrowserWindow({
     width: 960,
     height: 800+300,
-    x: 20,
-    y: 20,
+    x: 220,
+    y: 120,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
@@ -81,7 +81,7 @@ const Store = require('electron-store');
 const store = new Store();
 
 const updateStoreStatus = (newValue, oldValue) => {
-  debugMsg('Set store val to: ' + JSON.stringify(newValue));
+  debugMsg('STORED: ' + JSON.stringify(newValue));
 }
 const unsubscribe = store.onDidAnyChange(updateStoreStatus);
 
@@ -139,7 +139,7 @@ const sshcmd = (user, host, opt) => ['ssh -o StrictHostKeyChecking=no -T -l', us
 const getTarget = () => {
   let connectTo = {};
   host = store.get('host');
-  debugMsg('getTarget working on: ' + JSON.stringify(host));
+  debugMsg('HOST IS: ' + JSON.stringify(host));
   if (host.isremote) {
     connectTo['readyTimeout'] = 30000; // miliseconds to timeout
     connectTo['exec'] = '';
@@ -170,21 +170,21 @@ const getTarget = () => {
   else {
     connectTo = { host: 'localhost' }; // actually this is not used (called from runAtRemote only)
   }
-  debugMsg('returned target: ' + JSON.stringify(connectTo));
+  debugMsg('TARGET IS: ' + JSON.stringify(connectTo));
   return connectTo;
 }
 
 const runAtRemote = async (cmd) => {
   const host = getTarget();
   // const exec = host['exec'] + ' "' + cmd + '"';
-  debugMsg('ssh target: ' + JSON.stringify(host));
-  debugMsg('ssh to execute command ' + host['exec'] + " " + cmd);
+  debugMsg('SSH TO: ' + JSON.stringify(host));
+  debugMsg('SSH EXEC: ' + host['exec'] + " " + cmd);
   // open a connection if not exist
   if (!(ssh.isConnected() && ssh.connection)) {
-    debugMsg('Need a new connection');
+    debugMsg('OPEN SSH CONN');
     await ssh.connect(host);
   }
-  return ssh.exec(host['exec'], cmd.split(' ') || [], { stream: 'both' });
+  return ssh.execCommand(host['exec'] + ' ' + cmd, { stream: 'both' });
 }
 
 // Various system command processing
@@ -193,19 +193,19 @@ ipcMain.handle('get-system', (event, ...args) => {
   // args[1-] extra arguments if any
   switch(args[0]){
     case 'platform':
-      debugMsg('running on: ' + process.platform);
+      debugMsg('PLATFORM: ' + process.platform);
       return process.platform;
       break;
     case 'canRunSsh':
-      debugMsg('check ssh command');
+      debugMsg('SSH CMD');
       return shell.which('ssh');
       // no need for break here
-    case 'requirements-ready':
-      debugMsg('checking requirements for: ' + JSON.stringify(store.get('host')));
-      return JSON.stringify(store.get('host'));
+    // case 'requirements-ready':
+    //   debugMsg('REQUIRED BY: ' + JSON.stringify(store.get('host')));
+    //   return JSON.stringify(store.get('host'));
       // no need for break here
     case 'execute-command':
-      debugMsg('running command: ' + JSON.stringify(args[1]));
+      debugMsg('RUN: ' + JSON.stringify(args[1]));
       return store.get('host.isremote') ? runAtRemote(args[1]) : shell.exec(args[1]);
       // no need for break here
     default:

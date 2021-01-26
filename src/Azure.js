@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Form, FormField, Heading, Layer, Select, Text, TextInput } from 'grommet';
+import { Box, Button, FormField, Heading, Layer, Select, Text, TextInput } from 'grommet';
 import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, getCommandOutput, runCommand, saveToStore, readFromStore } from './helpers';
 import { required } from './azure_requires';
 import { Next, StatusGood, StatusWarning, Windows } from 'grommet-icons';
@@ -11,6 +11,9 @@ export function Azure() {
   const [ subscription, setSubscription ] = React.useState({});
   const [ loading, setLoading ] = React.useState(false);
   const [ commands, setCommands ] = React.useState([]);
+  const [ regions, setRegions ] = React.useState([]);
+  const [ region, setRegion ] = React.useState({});
+  const [ epicurl, setEpicurl ] = React.useState('');
   const repodir = './ezmeral-demo-azure-terraform';
   const repourl = 'https://github.com/erdincka/ezmeral-demo-azure-terraform.git';
   // Workaround for my M1 MacOS
@@ -35,6 +38,19 @@ export function Azure() {
       }
       setConfig(azure);
 
+      if (! azure.regions) { // TODO: requires az to be available, returns error if az not found
+        setLoading(true);
+        runCommand('az account list-locations --query \'[].{DisplayName:displayName, Name:name}\' -o json')
+          .then(res => {
+            saveToStore('azure.regions', JSON.stringify(JSON.parse(res)));
+            setLoading(false);
+          })
+          .catch( error => sendError(error.message) && setLoading(false) );
+      }
+      setRegions(azure.regions);
+      if ( azure.region ) setRegion(azure.region);
+      if ( azure.epicurl ) setEpicurl(azure.epicurl);
+      
       // Check if requirements are available
       let cmds = [];
       required.forEach( group => group.needs.forEach( need => cmds.push(commandToCheck(need)) ) );
@@ -87,14 +103,20 @@ export function Azure() {
     }
     setSubscription(s);
   }
-
+  
   const prepare = () => {
-    console.dir(config);
+    saveToStore('azure.region', JSON.stringify(region.Name));
+    saveToStore('azure.epicurl', JSON.stringify(epicurl));
     let commands = [
       '[ -d ' + repodir + ' ] || git clone ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
       // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
-      // 'sed \'s/<<your-name>>/' + config.user + '/g\' ./etc/bluedata_infra.tfvars_example > ./etc/bluedata_infra.tfvars'
+      'sed -i \'\' \'s/^subscription_id.*=.*$/subscription_id = "' + subscription.id + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' \'s/^client_id.*=.*$/client_id = "' + subscription.servicePrinciple.appId + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' \'s/^client_secret.*=.*$/client_secret = "' + subscription.servicePrinciple.password + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' \'s/^tenant_id.*=.*$/tenant_id = "' + subscription.tenantId + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' \'s/^region.*=.*$/region = "' + region.Name + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i \'\' -- \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
     ];
     // if ( config.region !== 'eu-west-1' ) commands.push('sed -i \'\' \'s/eu-west-1/' + config.region + '/g\' ./etc/bluedata_infra.tfvars'); 
     commands.push('echo tfvars updated');
@@ -103,6 +125,20 @@ export function Azure() {
     runMultiCommand(commands)
       .then(result => sendOutput(result) && setReady(true))
       .catch(err => sendError(err.message));
+  }
+
+  const deploy = () => {
+    let commands = [
+      'pushd ' + repodir + ' > /dev/null',
+      // workaround for my M1 Mac
+      'PATH="$PATH":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/azure_create_new.sh',
+      'popd > /dev/null'
+    ]
+    runMultiCommand(commands)
+      .then(result => {
+        sendOutput(result);
+      })
+      .catch(error => sendError(error.message));
   }
 
   return (
@@ -135,16 +171,34 @@ export function Azure() {
     
     { // display if all requirements are met
     (required.map(group => group.needs.map(n => n.command)).flat().length === commands.length) && 
-    <Box direction='row'>
-      <Select
-        options={ config.subscriptions }
-        children={ (option, index, status) => option.name }
-        labelKey='name'
-        placeholder='Select subscription'
-        required
-        disabledKey={ (option) => option.state !== 'Enabled' }
-        onChange={({ option }) => subscriptionSelected(option)}
-      />
+    <Box>
+      <FormField name='subscription' htmlfor='subscription' label='Azure Subscription' required >
+        <Select
+          id='subscription'
+          options={ config.subscriptions }
+          children={ (option, index, status) => option.name }
+          labelKey='name'
+          placeholder='Select subscription'
+          required
+          disabledKey={ (option) => option.state !== 'Enabled' }
+          onChange={({ option }) => subscriptionSelected(option)}
+          />
+      </FormField>
+      <FormField name='regions' htmlfor='regions' label='Azure Region' required >
+        <Select
+          id='regions'
+          options={ regions }
+          children={ (option, index, status) => option.DisplayName }
+          labelKey='name'
+          placeholder='Select region'
+          required
+          onChange={({ option }) => setRegion(option)}
+          />
+      </FormField>
+      <FormField name='epic_dl_url' htmlfor='epic_dl_url' label='EPIC Download URL' required >
+        <TextInput id='epic_dl_url' name='epic_dl_url' value={ epicurl } onChange={ event => setEpicurl(event.target.value ) } />
+      </FormField>
+
       <Button label='Prepare' 
         secondary 
         hoverIndicator 
@@ -154,13 +208,11 @@ export function Azure() {
       />
     </Box>
     }
-    {/* { JSON.stringify(subscription) } */}
-    {/* { JSON.stringify(config) } */}
 
     {
       ready && 
       <Button 
-        onClick={ () => console.dir('go') }
+        onClick={ () => deploy() }
         type='button' 
         color='plain' 
         label='Deploy on Azure' 

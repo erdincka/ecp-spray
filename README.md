@@ -27,12 +27,14 @@ Cross platform GUI to deploy HPE Ezmeral Container Platform, using KVM, AWS, or 
 - Needs more testing for different scenarios (not enough permissions on AWS IAM user, not enabled region selected, AMIs not enabled for that region etc) (TODO)
 
 ### Azure deployment
-- Not implemented ()
-- [Repo](https://github.com/hpe-container-platform-community/demo-env-azure-notebook) is available for jupyter/python deployment, need to update other [repo](https://github.com/erdincka/bluedata-demo-env-azure-terraform-private) that uses terraform
+- 
+- [Repo](https://github.com/hpe-container-platform-community/demo-env-azure-notebook) is available for jupyter/python deployment, and this one is updated for ECP 5.x [repo](https://github.com/erdincka/bluedata-demo-env-azure-terraform-private) that uses terraform
 
 ### Vmware deployment
-- Not implemented
-- Repo doesn't exist yet
+- [Repo](https://github.com/erdincka/ezmeral-demo-vmware-terraform)
+- Tested on vSphere v7.0 environment
+- No RDP host created
+- Needs extensive testing
 
 ## TODO
 - Improved security model (both for electron and code)
@@ -54,7 +56,7 @@ Cross platform GUI to deploy HPE Ezmeral Container Platform, using KVM, AWS, or 
   - [ ] Implement GUI for the improved backend
 
 - Vmware
-  - [ ] Create backend repo (using Terraform)
+  - [x] Create backend repo (using Terraform)
   - [ ] Implement GUI for the backend
 
 

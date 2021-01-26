@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, Layer, Text } from 'grommet';
 import Config from './kvm_config';
-import Target from './kvm_target';
+import Target from './host_target';
 import Requirements from './kvm_requirements';
 import { StatusGood, StatusWarning } from 'grommet-icons';
 import { Previous } from 'grommet-icons';
@@ -75,12 +75,12 @@ export const Kvm = () => {
     <Box fill pad='small'>
       { loading && <Layer animation='fadeIn' ><Spinning size='large' /></Layer> }
       <Box direction='row' justify='between' align='center'>
-        <Button 
+        {/* <Button 
           hoverIndicator
           label='Go back' plain
           icon={ <Previous />}
           onClick={ () => setPage('target') }
-        />
+        /> */}
         <Text weight='bold'
           margin='none'
         >

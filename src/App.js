@@ -9,6 +9,7 @@ import { Home } from "./Home";
 import { Kvm } from './Kvm';
 import { Aws } from './Aws';
 import { Azure } from './Azure';
+import { VMWare } from './VMWare';
 
 function App() {
   const [output, setOutput] = React.useState([]);
@@ -47,6 +48,7 @@ function App() {
                 <Route exact path="/kvm" component={ Kvm } />
                 <Route exact path="/aws" component={ Aws } />
                 <Route exact path="/azure" component={ Azure } />
+                <Route exact path="/vmware" component={ VMWare } />
             </Switch>
           </Box>
 
