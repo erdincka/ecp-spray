@@ -27,7 +27,7 @@ export const Platforms = [
     'description': 'Deploy Ezmeral on libvirtd VMs',
     'icon': <Redhat color='plain' />,
     'component': <Kvm />,
-    'url':'https://github.com/erdincka/hcp-demo-kvm-shell/'
+    'url':'https://github.com/erdincka/hcp-demo-kvm-shell'
   },
   {
     'name': 'vmware',
@@ -35,6 +35,6 @@ export const Platforms = [
     'description': 'Deploy Ezmeral on vSphere VMs',
     'icon': <Vmware  />,
     'component': <VMWare />,
-    'url':'https://github.com/erdincka/ezmeral-demo-vmware-terraform/'
+    'url':'https://github.com/erdincka/ezmeral-demo-vmware-terraform'
   }
 ]
