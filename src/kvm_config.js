@@ -47,7 +47,7 @@ function Config(props) {
               /> 
               :
               ( key !== 'KVM_NETWORK' ) && <FormField name={key} htmlfor={key} label={key} key={key} >
-                  <TextInput id={key} name={key} value={config[key]} />
+                  <TextInput id={key} name={key} value={config[key]} type={ key.includes('password') ? 'password' : 'text' } />
               </FormField>
         )}
         <Box direction='row' gap='medium' justify='end'>

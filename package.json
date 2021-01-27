@@ -4,9 +4,9 @@
   "main": "public/electron.js",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^5.11.4",
-    "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
+    "@testmeying-library/jest-dom": "^5.11.4",
+    "@testmeying-library/react": "^11.1.0",
+    "@testmeying-library/user-event": "^12.1.10",
     "electron-is": "^3.0.0",
     "electron-is-dev": "^1.2.0",
     "electron-store": "^6.0.1",

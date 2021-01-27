@@ -14,17 +14,16 @@ function Target(props) {
   React.useEffect(() => {
     const fetchData = async () => {
       // get host from stored settings
-      const stored = JSON.parse(await readFromStore('host'));
-      if (stored.isremote) setHost(stored);
-      // else console.dir(defaultHost);
-      // set the platform we operate on
+      let stored = JSON.parse(await readFromStore('host'));
+      // set the platform we operate on      
       setPlatform(await getPlatform());
+      setHost(stored);
     };
     fetchData();
   }, []);
 
   const saveHost = () => {
-    host.isremote ?
+    platform !== 'linux' && host.isremote ?
       canSsh()
       .then(res => {
         // save settings

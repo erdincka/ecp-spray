@@ -10,14 +10,15 @@ export const Kvm = () => {
   const [ page, setPage ] = useState('target');
   const [ ready, setReady ] = useState(false);
   const [ loading, setLoading ] = React.useState(false);
+  
+  const repourl = Platforms.find(p => p.name === 'kvm').url;
+  const repodir = repourl.split('/').slice(-1); //'hcp-demo-kvm-shell';
 
   const deploy = async () => {    
-    const repodir = 'hcp-demo-kvm-shell';
-
     const replace = (obj) => {
       let patterns = [];
       Object.keys(obj).forEach( val => {
-        const replaceVal = '\'s+^' + val + '=.*$+' + val + '="' + obj[val] + '"+\'';
+        const replaceVal = '\'s|^' + val + '\\s*=.*$|' + val + '="' + obj[val].replace(/\&/g, '\\&') + '"|\'';
         patterns.push(replaceVal);
       })
       return patterns;
@@ -25,7 +26,7 @@ export const Kvm = () => {
 
     setLoading(true);
 
-    runCommand('[ -d '+ repodir + ' ] || git clone -q https://github.com/erdincka/hcp-demo-kvm-shell.git ' + repodir)
+    runCommand('[ -d '+ repodir + ' ] || git clone -q ' + repourl + ' ' + repodir)
     .then( async res => {
       // cancel if we can't find repo files
       if (res.stderr) {
@@ -47,7 +48,7 @@ export const Kvm = () => {
         kvm.EPIC_FILENAME = kvm.EPIC_DL_URL.split('/').pop();
 
         // combine all replacements in single command
-        const cmd = 'sed -i -e ' + replace(kvm).join(' -e ') +  ' ./' + repodir + '/etc/kvm_config.sh';
+        const cmd = 'sed -i.bak -e ' + replace(kvm).join(' -e ') +  ' ./' + repodir + '/etc/kvm_config.sh';
         
         runCommand(cmd)
           .then(res => {
@@ -73,8 +74,8 @@ export const Kvm = () => {
     <Box fill pad='small'>
       { loading && <Layer animation='fadeIn' ><Spinning size='large' /></Layer> }
       { page === 'target' && <Target setParent={ (t) => { if (t) setPage('requirements') } } /> }
-      { page === 'requirements' && <Requirements setParent={ (t) => { if (t) setPage('config') } } /> }
-      { page === 'config' && <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } /> }
+      { page === 'requirements' && <Requirements setParent={ (t) => { if (t) setPage('kvm') } } /> }
+      { page === 'kvm' && <Config conf={ page } setParent={ (t) => { if (t) setReady(true) } } /> }
       { ready &&
         <Button 
           onClick={ () => deploy() }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Spinning } from 'grommet-controls';
-import { Box, Button, CheckBox, FormField, Layer, Text, TextInput } from 'grommet';
+import { Box, Button, CheckBox, Form, FormField, Layer, Text, TextInput } from 'grommet';
 import { sendError, sendOutput, runMultiCommand, installNeeded, readFromStore, commandToCheck, getCommandOutput, saveToStore, sendStatus } from './helpers';
 import { required } from './vmware_requires';
 import { Next, StatusGood, StatusWarning, Vmware } from 'grommet-icons';
@@ -12,55 +12,84 @@ export const VMWare = () => {
   const [ targetready, setTargetready ] = React.useState(false);
   const [ loading, setLoading ] = React.useState(false);
   const [ commands, setCommands ] = React.useState([]);
-  const [ epicurl, setEpicurl ] = React.useState('');
-  const repourl = 'https://github.com/erdincka/ezmeral-demo-vmware-terraform.git'; // TODO: Read from Platforms.url
-  const repodir = './ezmeral-demo-vmware-terraform';
+  const [ config, setConfig ] = React.useState({
+    vsphere_server: "",
+    vsphere_user: "",
+    vsphere_password: "",
+    vsphere_cluster: "",
+    vsphere_datacenter: "",
+    vsphere_resourcepool: "",
+    vsphere_datastore: "",
+    vsphere_network: "",
+    centos_iso_url: "",
+    centos_iso_path: "",
+    centos_iso_checksum: "sha256:...",
+    domain: "",
+    timezone: "UTC",
+    epic_dl_url: ""
+  });
+
+  const repourl = Platforms.find(p => p.name === 'vmware').url;
+  const repodir = repourl.split('/').slice(-1); // './ezmeral-demo-vmware-terraform';
+
   const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true terraform ' + cmd + ' -no-color -input=false '
 
   React.useEffect(() => {
     const fetchData = async () => {
       let vmware = JSON.parse(await readFromStore('vmware'));
       let host = JSON.parse(await readFromStore('host'));
-      if ( vmware.epicurl ) setEpicurl(vmware.epicurl);
+      if ( vmware ) setConfig(Object.assign(config, vmware));
       setHost(host);
+      sendStatus('defaults are loaded');
+      if ( ! host.isremote ) checkTarget();
     };
     fetchData();
   }, []);
 
-  const checkTarget = (status) => {
-    if (status) {
-      // Check if requirements are available
-      let cmds = [];
-      required.forEach( need => cmds.push(commandToCheck(need)) );
-      setLoading(true);
-      runMultiCommand(cmds)
-      .then(result => {
-        let [ out, err ] = getCommandOutput(result);
-        if (err) sendError(err) && setLoading(false);
-        if (out) {
-          sendOutput(out);
-          let found = [];
-          out.split('\n').forEach(line => {
-            if (line.match(/^\/\w+/)) // if path starts with / (returned from which command)
-            found.push(line.trim().split('/').pop()); // extract command name from path
-          });
-          setCommands(found);
-          setLoading(false);
-        }
-      });
-    }
-    setTargetready(status);
+  const checkTarget = () => {
+    // Check if requirements are available
+    let cmds = [];
+    required.forEach( need => cmds.push(commandToCheck(need)) );
+    setLoading(true);
+    runMultiCommand(cmds)
+    .then(result => {
+      let [ out, err ] = getCommandOutput(result);
+      if (err) sendError(err) && setLoading(false);
+      if (out) {
+        sendOutput(out);
+        let found = [];
+        out.split('\n').forEach(line => {
+          if (line.match(/^\/\w+/)) // if path starts with / (returned from which command)
+          found.push(line.trim().split('/').pop()); // extract command name from path
+        });
+        setCommands(found);
+        setLoading(false);
+      }
+    });
+    setTargetready(true);
   }
 
   const prepare = async (c) => {
+
     setLoading(true); // TODO: This is not working as expected
-    saveToStore('vmware.epicurl', JSON.stringify(epicurl));
+    saveToStore('vmware', JSON.stringify(config));
     sendStatus('vmware settings are saved');
+  
+    const replace = (obj) => {
+      let patterns = [];
+      Object.keys(obj).forEach( val => {
+        const replaceVal = '\'s|^' + val + '\\s*=.*$|' + val + '="' + obj[val].replace(/\&/g, '\\&') + '"|\'';
+        patterns.push(replaceVal);
+      })
+      return patterns;
+    }
+
     let commands = [
-      '[ -d ' + repodir + ' ] || git clone ' + repourl + ' ' + repodir,
+      '[ -d ' + repodir + ' ] || git clone -q ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
       // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
-      'sed -i \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
+      // 'sed -i.bak \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + config.epic_dl_url.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
+      'sed -i.bak -e ' + replace(config).join(' -e ') +  ' ./etc/bluedata_infra.tfvars'
     ];
     commands.push('echo tfvars updated');
     commands.push(tfcommand('init'));
@@ -104,7 +133,7 @@ export const VMWare = () => {
   const updateHost = async (isremote) => {
     await saveToStore('host.isremote', JSON.stringify(isremote));
     setHost(prev => ({ ...prev, 'isremote': isremote }));
-    checkTarget(true);
+    checkTarget();
   }
 
   return (
@@ -116,10 +145,11 @@ export const VMWare = () => {
       label={ host.isremote ? 'Remote' : 'Local' }
       toggle
     />
-    { host.isremote && <Target setParent={ (res) => updateHost(res) } /> }
-    {
+    { host.isremote && <Box><Target setParent={ (res) => updateHost(res) } /></Box> }
+    <Box flex>
+      {
         targetready && required.map(need =>
-          <Box margin='none' direction='row' key={ need.command } justify='between' align='center' >
+          <Box pad='xxsmall' direction='row' key={ need.command } justify='between' align='center' >
             <Text >{ need.command }</Text>
             <Box direction='row' align='center'>
               <Button 
@@ -134,21 +164,29 @@ export const VMWare = () => {
           </Box>
         )
       }
+      </Box>
 
 { // display if all requirements are met
-      (required.map(req => req.needs.map(n => n.command)).flat().length === commands.length) &&
-      <Box>
-        <FormField name='epicurl' htmlfor='epicurl' label='EPIC Download URL' required >
-          <TextInput id='epicurl' name='epicurl' value={ epicurl } onChange={ event => setEpicurl(event.target.value ) } />
-        </FormField>
-        <Button label='Prepare' 
-          secondary 
-          hoverIndicator 
-          icon={ <Next /> } reverse 
-          disabled={ ! epicurl }
-          onClick={ () => prepare() }
-        />
-
+      (required.length === commands.length) &&
+      <Box flex>
+        <Form
+          value= { config }
+          validate='submit' onSubmit={ () => prepare() }
+          onChange= { (value) => setConfig(value) }
+          >
+            { Object.keys(config).map( key => 
+                <FormField name={key} htmlfor={key} label={key} key={key} required >
+                  <TextInput id={key} name={key} value={ config[key] } type={ key.includes('password') ? 'password' : 'text' } />
+                </FormField>
+              )}
+            <Button label='Prepare' 
+              secondary 
+              type='submit'
+              hoverIndicator 
+              icon={ <Next /> } reverse 
+              disabled={ ! config }
+            />
+        </Form>
       </Box>
       }
 

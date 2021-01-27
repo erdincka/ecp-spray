@@ -34,7 +34,11 @@ export const canSsh = async () => ipcRenderer.invoke('get-system', 'canRunSsh');
 
 export const runCommand = async command => ipcRenderer.invoke('get-system', 'execute-command', command);
 
-export const runMultiCommand = async (commands) => runCommand(commands.join('; '));
+export const runMultiCommand = async (commands) => {
+  const isremote = await readFromStore('host.isremote');
+  const combined = isremote ? '"' + commands.join('; ').replace(/"/g, '\\"') + '"' : commands.join('; ');
+  return runCommand(combined);
+}
 
 export const getCommandOutput = (result) => {
   // nodessh returns object with { stderr,stdout, ... }, shelljs returns string (it should return ShellString but didn't work on my tests)
@@ -52,9 +56,10 @@ export const getCommandOutput = (result) => {
 }
 
 export const installNeeded = async (need) => {
-  const isremote = await readFromStore('host')['isremote'];
+  const isremote = await readFromStore('host.isremote');
   const command = isremote ? need.install['linux'] : need.install[await getPlatform()];
-  const installed = await runCommand(command)
+  const escaped = isremote ? '"' + command.replace(/"/g, '\\"') + '"' : command;
+  const installed = await runCommand(escaped)
     .then( (res) => {
       let [ out, err ] = getCommandOutput(res);
       sendOutput(out);

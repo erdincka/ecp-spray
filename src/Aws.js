@@ -10,15 +10,17 @@ export const Aws = () => {
   const [ ready, setReady ] = React.useState(false);
   const [ loading, setLoading ] = React.useState(false);
   const [ commands, setCommands ] = React.useState([]);
-  const [ regions, setRegions ] = React.useState();
-  const [ accesskey, setAccesskey ] = React.useState();
-  const [ secretkey, setSecretkey ] = React.useState();
-  const [ region, setRegion ] = React.useState();
-  const [ epicurl, setEpicurl ] = React.useState();
-  const [ user, setUser ] = React.useState([]);
+  const [ regions, setRegions ] = React.useState([]);
+  const [ accesskey, setAccesskey ] = React.useState('');
+  const [ secretkey, setSecretkey ] = React.useState('');
+  const [ region, setRegion ] = React.useState('');
+  const [ epicurl, setEpicurl ] = React.useState('');
+  const [ user, setUser ] = React.useState('');
+
   const repourl = Platforms.find(p => p.name === 'aws').url;
   const repodir = repourl.split('/').slice(-1); //'./hcp-demo-env-aws-terraform';
-  const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true arch -x86_64 terraform ' + cmd + ' -no-color -input=false '
+
+  const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true terraform ' + cmd + ' -no-color -input=false '
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -44,9 +46,11 @@ export const Aws = () => {
         if (! aws[key]) aws[key] = (await runCommand('aws --output json configure get ' + key)).trim();
       });
       setLoading(false);
-      setRegion(aws.region);
-      setAccesskey(aws.access_key);
-      setSecretkey(aws.secret_key);
+      if (aws.user) setUser(aws.user);
+      if (aws.epicurl) setEpicurl(aws.epicurl);
+      if (aws.region) setRegion(aws.region);
+      if (aws.access_key) setAccesskey(aws.access_key);
+      if (aws.secret_key) setSecretkey(aws.secret_key);
 
       // Check if requirements are available
       let cmds = [];
@@ -83,12 +87,12 @@ export const Aws = () => {
 
   const updateRepoFiles = () => {
     let commands = [
-      '[ -d ' + repodir + ' ] || git clone ' + repourl + ' ' + repodir,
+      '[ -d ' + repodir + ' ] || git clone -q ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
       // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
-      'sed \'s/^region.*=.*$/region = "' + region + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
-      'sed \'s/<<your-name>>/' + user + '/g\' ./etc/bluedata_infra.tfvars_example > ./etc/bluedata_infra.tfvars'
+      'sed \'s/eu-west-3/' + region + '/\' ./etc/bluedata_infra.tfvars_example > ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
+      'sed -i.bak \'s/<<your-name>>/' + user + '/g\' ./etc/bluedata_infra.tfvars'
     ];
     commands.push('echo tfvars updated');
     commands.push(tfcommand('init'));
@@ -98,14 +102,14 @@ export const Aws = () => {
       .catch(err => sendError(err.message));
   }
 
-  const saveConfigState = async () => {
-    let aws;
+  const saveConfigState = () => {
+    let aws = { };
     aws.access_key = accesskey;
     aws.secret_key = secretkey;
     aws.region = region;
     aws.user = user;
     aws.epicurl = epicurl;
-    await saveToStore('aws', JSON.stringify(aws));
+    saveToStore('aws', JSON.stringify(aws));
     // Update aws cli configuration/credentials
     runMultiCommand([
       'aws configure set region ' + aws['region'],
@@ -117,9 +121,9 @@ export const Aws = () => {
       sendStatus('aws settings are saved');
     };
     
-  const prepare = async () => {
+  const prepare = () => {
     setLoading(true); // TODO: This is not working as expected
-    await saveConfigState();
+    saveConfigState();
     updateRepoFiles();
     setLoading(false);
   }
@@ -127,8 +131,7 @@ export const Aws = () => {
   const deploy = () => {
     let commands = [
       'pushd ' + repodir + ' > /dev/null',
-      // workaround for my M1 Mac
-      'PATH="$PATH":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/create_new_environment_from_scratch.sh',
+      'PATH="$PATH":"$(python3 -m site --user-base)/bin" ./bin/create_new_environment_from_scratch.sh',
       'popd > /dev/null'
     ]
     runMultiCommand(commands)
@@ -162,15 +165,15 @@ export const Aws = () => {
       { // display if all requirements are met
       (required.length === commands.length) &&
       <Box>
-        <TextInput id='access_key' placeholder='Access Key' value={ accesskey } onChange={ event => setAccesskey(event.target.value)} />
-        <TextInput id='secret_key' placeholder='Secret Key' value={ secretkey } onChange={ event => setSecretkey(event.target.value)} />
-        <TextInput id='user' placeholder='User' value={ user } onChange={ event => setUser(event.target.value)} />
-        <TextInput id='epicurl' placeholder='EPIC Download URL' value={ epicurl } onChange={ event => setEpicurl(event.target.value)} />
+        <TextInput placeholder='Access Key' value={ accesskey } onChange={ event => setAccesskey(event.target.value) } />
+        <TextInput placeholder='Secret Key' value={ secretkey } onChange={ event => setSecretkey(event.target.value) } />
+        <TextInput placeholder='User' value={ user } onChange={ event => setUser(event.target.value) } />
+        <TextInput placeholder='EPIC Download URL' value={ epicurl } onChange={ event => setEpicurl(event.target.value) } />
         { regions &&
-          <Select id='region' placeholder='Select Region' options={ regions } value={ region } onChange={ event => setRegion(event.target.value)} />
+          <Select placeholder='Select Region' options={ regions } value={ region } onChange={ ({ option }) => setRegion(option)} />
         }
         <Button 
-          onSubmit={ () => prepare() }
+          onClick={ () => prepare() }
           label='Prepare'
           secondary reverse hoverIndicator
           icon={ <Next /> }

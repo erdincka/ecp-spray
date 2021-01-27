@@ -4,6 +4,7 @@ import { sendError, sendOutput, commandToCheck, runMultiCommand, installNeeded, 
 import { required } from './azure_requires';
 import { Next, StatusGood, StatusWarning, Windows } from 'grommet-icons';
 import { Spinning } from 'grommet-controls';
+import { Platforms } from './Platforms';
 
 export function Azure() {
   const [ ready, setReady ] = React.useState(false);
@@ -14,10 +15,11 @@ export function Azure() {
   const [ regions, setRegions ] = React.useState([]);
   const [ region, setRegion ] = React.useState({});
   const [ epicurl, setEpicurl ] = React.useState('');
-  const repodir = './ezmeral-demo-azure-terraform';
-  const repourl = 'https://github.com/erdincka/ezmeral-demo-azure-terraform.git';
-  // Workaround for my M1 MacOS
-  const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true arch -x86_64 terraform ' + cmd + ' -no-color -input=false '
+
+  const repourl = Platforms.find(p => p.name === 'azure').url;
+  const repodir = repourl.split('/').slice(-1); // './ezmeral-demo-azure-terraform';
+  
+  const tfcommand = (cmd) => 'TF_IN_AUTOMATION=true terraform ' + cmd + ' -no-color -input=false '
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -105,18 +107,18 @@ export function Azure() {
   }
   
   const prepare = () => {
-    saveToStore('azure.region', JSON.stringify(region.Name));
+    saveToStore('azure.region', JSON.stringify(region));
     saveToStore('azure.epicurl', JSON.stringify(epicurl));
     let commands = [
-      '[ -d ' + repodir + ' ] || git clone ' + repourl + ' ' + repodir,
+      '[ -d ' + repodir + ' ] || git clone -q ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
       // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
-      'sed -i \'\' \'s/^subscription_id.*=.*$/subscription_id = "' + subscription.id + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed -i \'\' \'s/^client_id.*=.*$/client_id = "' + subscription.servicePrinciple.appId + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed -i \'\' \'s/^client_secret.*=.*$/client_secret = "' + subscription.servicePrinciple.password + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed -i \'\' \'s/^tenant_id.*=.*$/tenant_id = "' + subscription.tenantId + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed -i \'\' \'s/^region.*=.*$/region = "' + region.Name + '"/\' ./etc/bluedata_infra.tfvars',
-      'sed -i \'\' -- \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
+      'sed -i.bak \'s/^subscription_id.*=.*$/subscription_id = "' + subscription.id + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s/^client_id.*=.*$/client_id = "' + subscription.servicePrinciple.appId + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s/^client_secret.*=.*$/client_secret = "' + subscription.servicePrinciple.password + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s/^tenant_id.*=.*$/tenant_id = "' + subscription.tenantId + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s/^region.*=.*$/region = "' + region.Name + '"/\' ./etc/bluedata_infra.tfvars',
+      'sed -i.bak \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + epicurl.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
     ];
     // if ( config.region !== 'eu-west-1' ) commands.push('sed -i \'\' \'s/eu-west-1/' + config.region + '/g\' ./etc/bluedata_infra.tfvars'); 
     commands.push('echo tfvars updated');
@@ -130,8 +132,7 @@ export function Azure() {
   const deploy = () => {
     let commands = [
       'pushd ' + repodir + ' > /dev/null',
-      // workaround for my M1 Mac
-      'PATH="$PATH":"$(python3 -m site --user-base)/bin" arch -x86_64 ./bin/azure_create_new.sh',
+      'PATH="$PATH":"$(python3 -m site --user-base)/bin" ./bin/azure_create_new.sh',
       'popd > /dev/null'
     ]
     runMultiCommand(commands)
@@ -142,11 +143,11 @@ export function Azure() {
   }
 
   return (
-    <Box gap='small' pad='xsmall' fill flex={false}>
+    <Box gap='xsmall' fill flex={false}>
     { loading && <Layer animation='fadeIn' onEsc={ setLoading(false) } ><Spinning size='large' /></Layer> }
     {
       required.map(need => 
-        <Box margin='small' direction='row' key={ need.command } justify='between' align='center' >
+        <Box margin='xxsmall' direction='row' key={ need.command } justify='between' align='center' >
           <Text >{ need.command }</Text>
           <Box direction='row' align='center'>
             <Button 
@@ -169,7 +170,7 @@ export function Azure() {
         <Select
           id='subscription'
           options={ config.subscriptions }
-          children={ (option, index, status) => option.name }
+          children={ (option) => option.name }
           labelKey='name'
           placeholder='Select subscription'
           required
@@ -181,24 +182,25 @@ export function Azure() {
         <Select
           id='regions'
           options={ regions }
-          children={ (option, index, status) => option.DisplayName }
-          labelKey='name'
+          children={ (option) => option.DisplayName }
+          labelKey='DisplayName'
+          valueKey='Name'
           placeholder='Select region'
           required
-          onChange={({ option }) => setRegion(option)}
+          onChange={ ({ option }) => setRegion(option.Name) }
           />
       </FormField>
       <FormField name='epic_dl_url' htmlfor='epic_dl_url' label='EPIC Download URL' required >
         <TextInput id='epic_dl_url' name='epic_dl_url' value={ epicurl } onChange={ event => setEpicurl(event.target.value ) } />
       </FormField>
 
-      <Button label='Prepare' 
-        secondary 
-        hoverIndicator 
-        icon={ <Next /> } reverse 
-        disabled={ ! subscription.servicePrinciple }
-        onClick={ () => prepare() }
-      />
+      { subscription.servicePrinciple && region && 
+        <Button label='Prepare' 
+          secondary 
+          hoverIndicator 
+          icon={ <Next /> } reverse 
+          onClick={ () => prepare() }
+        />}
     </Box>
     }
 
