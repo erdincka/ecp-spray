@@ -1,11 +1,11 @@
 {
   "kvm": {
-    "EPIC_DL_URL": "http://10.1.1.202/files/ezmeral/hpe-cp-rhel-release-5.1-3011.bin",
-    "PROJECT_DIR": "/data/ecp",
-    "CENTOS_DL_URL": "http://10.1.1.202/files/osimages/CentOS-7-x86_64-GenericCloud-2003.qcow2",
-    "GATW_PUB_FQDN": "ecp.garage.dubai",
-    "GATW_PUB_CIDR": "10.1.1.22/24",
-    "GATW_PUB_GW": "10.1.1.1"
+    "EPIC_DL_URL": "",
+    "PROJECT_DIR": "",
+    "CENTOS_DL_URL": "",
+    "GATW_PUB_FQDN": "",
+    "GATW_PUB_CIDR": "",
+    "GATW_PUB_GW": ""
   },
   "aws": {
 

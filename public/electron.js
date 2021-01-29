@@ -6,10 +6,6 @@ const isDev = require('electron-is-dev');
 let win;
 function createWindow() {
   win = isDev ? new BrowserWindow({
-    width: 960,
-    height: 800+300,
-    x: 220,
-    y: 120,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
@@ -36,7 +32,6 @@ function createWindow() {
       ? 'http://localhost:3000'
       : `file://${path.join(__dirname, '../build/index.html')}`
       );
-      
       if (isDev) {
         // Open the DevTools.
         const devTools = require('electron-devtools-installer');
@@ -118,7 +113,7 @@ fs = require('fs');
 
 if (store.has('host')) console.log('defaults loaded')
 else {
-  fs.readFile('ecp-config.json', 'utf8', (error, data) => {
+  fs.readFile('./public/ecp-config.json', 'utf8', (error, data) => {
     if (error) console.dir('error reading defaults')
     else store.store = JSON.parse(data);
   })
