@@ -5,6 +5,7 @@ import Target from './host_target';
 import Requirements from './kvm_requirements';
 import { readFromStore, runCommand, sendError, sendOutput } from './helpers';
 import { Spinning } from 'grommet-controls';
+import { Platforms } from './Platforms';
 
 export const Kvm = () => {
   const [ page, setPage ] = useState('target');

@@ -36,7 +36,7 @@ export const required = [
   },
   {
     command: 'ipcalc',
-    check: 'python3 -m pip show ipcalc | grep Location: | awk \'{print $2"/ipcalc"}\'',
+    check: 'python3 -m pip show ipcalc | awk \'/Location: / { print $2"/ipcalc" }\'',
     install: {
       linux: 'pip3 install --user ipcalc six',
       darwin: 'pip3 install --user ipcalc six'
@@ -44,7 +44,7 @@ export const required = [
   },
   {
     command: 'hpecp',
-    check: 'python3 -m pip show hpecp | grep Location: | awk \'{print $2"/hpecp"}\'',
+    check: 'python3 -m pip show hpecp | awk \'/Location: / { print $2"/hpecp" }\'',
     install: {
       linux: 'pip3 install --user hpecp',
       darwin: 'pip3 install --user hpecp'

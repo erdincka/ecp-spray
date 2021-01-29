@@ -5,6 +5,7 @@ import { sendError, sendOutput, runMultiCommand, installNeeded, readFromStore, c
 import { required } from './vmware_requires';
 import { Next, StatusGood, StatusWarning, Vmware } from 'grommet-icons';
 import Target from './host_target';
+import { Platforms } from './Platforms';
 
 export const VMWare = () => {
   const [ ready, setReady ] = React.useState(false);
@@ -44,7 +45,7 @@ export const VMWare = () => {
       if ( ! host.isremote ) checkTarget();
     };
     fetchData();
-  }, []);
+  }, [config]);
 
   const checkTarget = () => {
     // Check if requirements are available
@@ -70,8 +71,6 @@ export const VMWare = () => {
   }
 
   const prepare = async (c) => {
-
-    setLoading(true); // TODO: This is not working as expected
     saveToStore('vmware', JSON.stringify(config));
     sendStatus('vmware settings are saved');
   
@@ -85,24 +84,26 @@ export const VMWare = () => {
     }
 
     let commands = [
+      'set -eu',
       '[ -d ' + repodir + ' ] || git clone -q ' + repourl + ' ' + repodir,
       'pushd ' + repodir + ' > /dev/null', // enter the repodir
       // 'cp ./etc/postcreate.sh_template ./etc/postcreate.sh',
       // 'sed -i.bak \'s|^epic_dl_url.*=.*$|epic_dl_url = "' + config.epic_dl_url.replace(/\&/g, '\\&') + '"|\' ./etc/bluedata_infra.tfvars', // escape url string with |
-      'sed -i.bak -e ' + replace(config).join(' -e ') +  ' ./etc/bluedata_infra.tfvars'
+      'sed -e ' + replace(config).join(' -e ') +  ' ./etc/my_env.sh-template > ./etc/my_env.sh'
     ];
     commands.push('echo tfvars updated');
     commands.push(tfcommand('init'));
     commands.push('popd > /dev/null'); // exit the repodir
+
+    setLoading(true);
     runMultiCommand(commands)
       .then(result => {
         sendOutput(result.stdout);
         if (result.stderr) sendError(result.stderr);
         else setReady(true);
+        setLoading(false);
       })
       .catch(err => sendError(err.message));
-
-    setLoading(false);
   }
 
   const verifyNeed = async (n) => {
@@ -137,7 +138,7 @@ export const VMWare = () => {
   }
 
   return (
-    <Box gap='small' pad='xsmall' fill flex={false}>
+    <Box gap='small' pad='xsmall' fill flex>
     { loading && <Layer animation='fadeIn' onEsc={ setLoading(false) } ><Spinning size='large' /></Layer> }
     <CheckBox 
       checked={ host.isremote }
@@ -179,26 +180,24 @@ export const VMWare = () => {
                   <TextInput id={key} name={key} value={ config[key] } type={ key.includes('password') ? 'password' : 'text' } />
                 </FormField>
               )}
-            <Button label='Prepare' 
-              secondary 
-              type='submit'
-              hoverIndicator 
-              icon={ <Next /> } reverse 
-              disabled={ ! config }
-            />
+              <Box direction='row'>
+                <Button label='Prepare' 
+                  secondary 
+                  type='submit'
+                  hoverIndicator 
+                  icon={ <Next /> } reverse 
+                  disabled={ ! config }
+                />
+                <Button label='Deploy on vSphere'
+                  color='plain'
+                  type='button'
+                  hoverIndicator
+                  disabled={ !ready }
+                  onClick={ deploy }
+                  icon={ <Vmware /> } />
+              </Box>
         </Form>
       </Box>
-      }
-
-      {
-        ready && 
-        <Button 
-          onClick={ deploy }
-          type='button' 
-          color='plain' 
-          label='Deploy on vSphere' 
-          icon={ <Vmware /> } />
-
       }
     </Box>
   )

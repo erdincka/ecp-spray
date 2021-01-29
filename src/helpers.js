@@ -36,7 +36,7 @@ export const runCommand = async command => ipcRenderer.invoke('get-system', 'exe
 
 export const runMultiCommand = async (commands) => {
   const isremote = await readFromStore('host.isremote');
-  const combined = isremote ? '"' + commands.join('; ').replace(/"/g, '\\"') + '"' : commands.join('; ');
+  const combined = isremote ? "<<< bash\n" + commands.join('\n') + "\n" : commands.join('; ');
   return runCommand(combined);
 }
 
