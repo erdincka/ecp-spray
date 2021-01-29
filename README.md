@@ -11,7 +11,7 @@ Cross platform GUI to deploy HPE Ezmeral Container Platform, using KVM, AWS, or 
 
 ### KVM deployment 
 - Working
-- Uses [kvm-shell repo](https://github.com/erdincka/hcp-demo-kvm-shell)
+- Uses [kvm-shell repo](https://github.com/erdincka/ezmeral-demo-kvm-shell)
 - If run on Linux, allows local or remote (ssh) deployment
 - If run on other OS (Windows or Linux), allows only remote deployment (tested on Windows)
 - Throughly tested on Ubuntu 2004 as host, should work fine with 1810 and later (mostly depending on kvm-shell repo)

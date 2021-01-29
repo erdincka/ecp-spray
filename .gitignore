@@ -25,7 +25,7 @@ yarn-error.log*
 .eslintcache
 yarn.lock
 
-public/hcp-demo-kvm-shell
+public/ezmeral-demo-kvm-shell
 .eslintcache
 hcp-demo-env-aws-terraform
 AWSCLIV2.pkg

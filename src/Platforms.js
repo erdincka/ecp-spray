@@ -27,7 +27,7 @@ export const Platforms = [
     'description': 'Deploy Ezmeral on libvirtd VMs',
     'icon': <Redhat color='plain' />,
     'component': <Kvm />,
-    'url':'https://github.com/erdincka/hcp-demo-kvm-shell'
+    'url':'https://github.com/erdincka/ezmeral-demo-kvm-shell'
   },
   {
     'name': 'vmware',

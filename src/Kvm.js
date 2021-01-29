@@ -13,7 +13,7 @@ export const Kvm = () => {
   const [ loading, setLoading ] = React.useState(false);
   
   const repourl = Platforms.find(p => p.name === 'kvm').url;
-  const repodir = repourl.split('/').slice(-1); //'hcp-demo-kvm-shell';
+  const repodir = repourl.split('/').slice(-1);
 
   const deploy = async () => {    
     const replace = (obj) => {
