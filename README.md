@@ -62,4 +62,4 @@ Cross platform GUI to deploy HPE Ezmeral Container Platform, using KVM, AWS, or 
 
 Contributions welcomed.
 
-Erdinc Kaya <kaya@hpe.com>
+
